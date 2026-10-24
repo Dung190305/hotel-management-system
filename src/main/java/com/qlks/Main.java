@@ -3,6 +3,8 @@ package com.qlks;
 import com.formdev.flatlaf.FlatLightLaf;
 import org.mindrot.jbcrypt.BCrypt;
 
+import com.qlks.view.LoginFrame;
+
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import java.util.logging.Level;
@@ -25,15 +27,17 @@ public class Main {
             LOGGER.log(Level.WARNING, "Không thể thiết lập giao diện FlatLaf, sử dụng giao diện mặc định.", ex);
         }
 
-        // 2. Kiểm tra nhanh thư viện jBCrypt mã hóa mật khẩu
-        String samplePassword = "admin";
-        String hashed = BCrypt.hashpw(samplePassword, BCrypt.gensalt(10));
-        boolean check = BCrypt.checkpw(samplePassword, hashed);
-        LOGGER.info("Kiểm tra jBCrypt: Mật khẩu test '" + samplePassword + "' -> Băm: " + (check ? "OK" : "FAILED"));
+        // 2. Kiểm tra kết nối Database
+        if (com.qlks.util.DatabaseConnection.checkConnection()) {
+            LOGGER.info("Kết nối cơ sở dữ liệu MySQL hotel_db: THÀNH CÔNG.");
+        } else {
+            LOGGER.warning("Không thể kết nối đến MySQL. Vui lòng kiểm tra dịch vụ MySQL80 và database.properties!");
+        }
 
-        // 3. Khởi chạy giao diện chính trên Event Dispatch Thread (EDT)
+        // 3. Khởi chạy màn hình đăng nhập LoginFrame trên Event Dispatch Thread (EDT)
         SwingUtilities.invokeLater(() -> {
-            System.out.println("Hệ thống đã sẵn sàng cho các giai đoạn tiếp theo!");
+            LoginFrame loginFrame = new LoginFrame();
+            loginFrame.setVisible(true);
         });
     }
 }
