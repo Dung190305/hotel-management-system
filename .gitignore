@@ -1,0 +1,22 @@
+# Maven build output
+target/
+*.class
+
+# IDE configurations
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Log files
+*.log
+
+# Sensitive database local override (nếu người dùng tạo file local)
+src/main/resources/database-local.properties
