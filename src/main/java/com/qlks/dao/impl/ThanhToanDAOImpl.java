@@ -49,7 +49,7 @@ public class ThanhToanDAOImpl implements ThanhToanDAO {
 
     @Override
     public boolean save(ThanhToan tt) {
-        String sql = "INSERT INTO thanh_toan (ma_thanh_toan, ma_hoa_don, so_tien, phuong_thuc, thoi_gian_giao_dich, ghiChu) " +
+        String sql = "INSERT INTO thanh_toan (ma_thanh_toan, ma_hoa_don, so_tien, phuong_thuc, thoi_gian_giao_dich, ghi_chu) " +
                 "VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
