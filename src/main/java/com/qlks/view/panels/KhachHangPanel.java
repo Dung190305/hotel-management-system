@@ -1,8 +1,11 @@
 package com.qlks.view.panels;
 
+import com.qlks.controller.KhachHangController;
+import com.qlks.model.DatPhong;
+import com.qlks.model.HoaDon;
 import com.qlks.model.KhachHang;
-import com.qlks.service.KhachHangService;
 import com.qlks.util.FormatUtil;
+import com.qlks.util.IdGenerator;
 import com.qlks.util.UIUtil;
 
 import javax.swing.*;
@@ -11,20 +14,31 @@ import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.qlks.util.AppEventBus;
+import com.qlks.view.RefreshablePanel;
+
 /**
  * Màn hình Quản lý Khách hàng lưu trú.
  */
-public class KhachHangPanel extends JPanel {
+public class KhachHangPanel extends JPanel implements RefreshablePanel, AppEventBus.AppEventListener {
 
-    private final KhachHangService khachHangService;
+    private final KhachHangController khachHangController;
     private JTable tblKhachHang;
     private DefaultTableModel modelKhachHang;
     private JTextField txtTimKiem;
 
     public KhachHangPanel() {
-        this.khachHangService = new KhachHangService();
+        this.khachHangController = new KhachHangController();
         initComponents();
+        AppEventBus.register(this);
         loadDuLieu();
+    }
+
+    @Override
+    public void onEvent(AppEventBus.EventType eventType) {
+        if (eventType == AppEventBus.EventType.CUSTOMER_CHANGED) {
+            loadDuLieu();
+        }
     }
 
     private void initComponents() {
@@ -91,6 +105,10 @@ public class KhachHangPanel extends JPanel {
         JPanel pnlBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         pnlBottom.setBackground(Color.WHITE);
 
+        JButton btnLichSu = UIUtil.createButton("Lịch sử đặt phòng & Hóa đơn", new Color(23, 162, 184), Color.WHITE);
+        btnLichSu.addActionListener(e -> xuLyXemLichSu());
+        pnlBottom.add(btnLichSu);
+
         JButton btnSua = UIUtil.createButton("Sửa thông tin", new Color(253, 126, 20), Color.WHITE);
         btnSua.addActionListener(e -> xuLySuaKhachHang());
         pnlBottom.add(btnSua);
@@ -99,13 +117,13 @@ public class KhachHangPanel extends JPanel {
     }
 
     public void loadDuLieu() {
-        List<KhachHang> list = khachHangService.layTatCaKhachHang();
+        List<KhachHang> list = khachHangController.layTatCaKhachHang();
         hienThiLenBang(list);
     }
 
     private void xuLyTimKiem() {
         String kw = txtTimKiem.getText().trim();
-        List<KhachHang> list = khachHangService.timKiem(kw);
+        List<KhachHang> list = khachHangController.timKiem(kw);
         hienThiLenBang(list);
     }
 
@@ -124,7 +142,7 @@ public class KhachHangPanel extends JPanel {
     }
 
     private void hienThiDialogThemKhachHang() {
-        JTextField txtMa = new JTextField("KH" + System.currentTimeMillis() % 10000);
+        JTextField txtMa = new JTextField(IdGenerator.next("KH"));
         JTextField txtTen = new JTextField();
         JTextField txtSdt = new JTextField();
         JTextField txtEmail = new JTextField();
@@ -153,7 +171,7 @@ public class KhachHangPanel extends JPanel {
                         txtCccd.getText().trim(),
                         LocalDate.now()
                 );
-                khachHangService.themKhachHang(kh);
+                khachHangController.themKhachHang(kh);
                 UIUtil.showSuccess(this, "Thêm khách hàng thành công!");
                 loadDuLieu();
             } catch (Exception ex) {
@@ -170,7 +188,7 @@ public class KhachHangPanel extends JPanel {
         }
 
         String maKh = (String) modelKhachHang.getValueAt(row, 0);
-        KhachHang kh = khachHangService.timTheoMa(maKh).orElse(null);
+        KhachHang kh = khachHangController.timTheoMa(maKh).orElse(null);
         if (kh == null) return;
 
         JTextField txtTen = new JTextField(kh.getHoTen());
@@ -196,12 +214,83 @@ public class KhachHangPanel extends JPanel {
                 kh.setEmail(txtEmail.getText().trim());
                 kh.setSoCCCD(txtCccd.getText().trim());
 
-                khachHangService.capNhatKhachHang(kh);
+                khachHangController.capNhatKhachHang(kh);
                 UIUtil.showSuccess(this, "Cập nhật thông tin khách hàng thành công!");
                 loadDuLieu();
             } catch (Exception ex) {
                 UIUtil.showError(this, ex.getMessage());
             }
         }
+    }
+
+    private void xuLyXemLichSu() {
+        int row = tblKhachHang.getSelectedRow();
+        if (row < 0) {
+            UIUtil.showError(this, "Vui lòng chọn khách hàng để tra cứu lịch sử lưu trú.");
+            return;
+        }
+
+        String maKh = (String) modelKhachHang.getValueAt(row, 0);
+        String tenKh = (String) modelKhachHang.getValueAt(row, 1);
+
+        List<DatPhong> dsDatPhong = khachHangController.layLichSuDatPhong(maKh);
+        List<HoaDon> dsHoaDon = khachHangController.layLichSuHoaDon(maKh);
+
+        JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Lịch sử khách hàng: " + tenKh + " (" + maKh + ")", true);
+        dlg.setSize(800, 500);
+        dlg.setLocationRelativeTo(this);
+        dlg.setLayout(new BorderLayout(10, 10));
+
+        JTabbedPane tabs = new JTabbedPane();
+
+        // Tab 1: Lịch sử đặt phòng
+        String[] hDatPhong = {"Mã ĐP", "Phòng", "Ngày nhận", "Ngày trả", "Số khách", "Trạng thái", "Tiền cọc"};
+        DefaultTableModel mDp = new DefaultTableModel(hDatPhong, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        for (DatPhong dp : dsDatPhong) {
+            mDp.addRow(new Object[]{
+                    dp.getMaDatPhong(),
+                    dp.getPhong() != null ? "P." + dp.getPhong().getSoPhong() : "",
+                    FormatUtil.formatNgayGio(dp.getNgayNhanPhong()),
+                    FormatUtil.formatNgayGio(dp.getNgayTraPhong()),
+                    dp.getSoLuongKhach(),
+                    dp.getTrangThai().getTenHienThi(),
+                    FormatUtil.formatTien(dp.getTienCoc())
+            });
+        }
+        JTable tDp = new JTable(mDp);
+        UIUtil.formatTable(tDp);
+        tabs.addTab("Lịch sử đặt phòng (" + dsDatPhong.size() + ")", new JScrollPane(tDp));
+
+        // Tab 2: Lịch sử hóa đơn
+        String[] hHoaDon = {"Mã HĐ", "Mã ĐP", "Ngày lập", "Tiền phòng", "Tiền dịch vụ", "Tổng chi phí", "Trạng thái"};
+        DefaultTableModel mHd = new DefaultTableModel(hHoaDon, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        for (HoaDon hd : dsHoaDon) {
+            mHd.addRow(new Object[]{
+                    hd.getMaHoaDon(),
+                    hd.getDatPhong() != null ? hd.getDatPhong().getMaDatPhong() : "",
+                    FormatUtil.formatNgayGio(hd.getNgayLap()),
+                    FormatUtil.formatTien(hd.getTienPhong()),
+                    FormatUtil.formatTien(hd.getTienDichVu()),
+                    FormatUtil.formatTien(hd.getTongChiPhi()),
+                    hd.getTrangThai().getTenHienThi()
+            });
+        }
+        JTable tHd = new JTable(mHd);
+        UIUtil.formatTable(tHd);
+        tabs.addTab("Lịch sử hóa đơn (" + dsHoaDon.size() + ")", new JScrollPane(tHd));
+
+        dlg.add(tabs, BorderLayout.CENTER);
+
+        JPanel pnlClose = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnDong = UIUtil.createButton("Đóng", new Color(108, 117, 125), Color.WHITE);
+        btnDong.addActionListener(e -> dlg.dispose());
+        pnlClose.add(btnDong);
+        dlg.add(pnlClose, BorderLayout.SOUTH);
+
+        dlg.setVisible(true);
     }
 }

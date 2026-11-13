@@ -1,0 +1,16 @@
+# ===================================================================
+# FILE MẪU CẤU HÌNH KẾT NỐI CƠ SỞ DỮ LIỆU MYSQL (DATABASE CONFIG TEMPLATE)
+# ===================================================================
+# Hướng dẫn:
+# 1. Sao chép file này thành "database.properties" cùng thư mục:
+#    cp database.properties.example database.properties
+# 2. Điền thông tin tài khoản MySQL thực tế của bạn vào các dòng dưới.
+# 3. Tuyệt đối không commit file "database.properties" chứa mật khẩu thật lên Git repository công khai.
+
+db.driver=com.mysql.cj.jdbc.Driver
+db.url=jdbc:mysql://localhost:3306/hotel_db?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Ho_Chi_Minh&useSSL=false&allowPublicKeyRetrieval=true
+db.username=your_mysql_username
+db.password=your_mysql_password
+
+# Thời gian chờ kiểm tra kết nối (giây)
+db.timeout=5

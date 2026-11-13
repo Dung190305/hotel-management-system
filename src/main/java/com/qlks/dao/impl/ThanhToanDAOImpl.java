@@ -23,10 +23,15 @@ public class ThanhToanDAOImpl implements ThanhToanDAO {
         BigDecimal soTien = rs.getBigDecimal("so_tien");
         PhuongThucThanhToan phuongThuc = PhuongThucThanhToan.fromString(rs.getString("phuong_thuc"));
         Timestamp ts = rs.getTimestamp("thoi_gian_giao_dich");
+        String maNhanVien = null;
+        try {
+            maNhanVien = rs.getString("ma_nhan_vien");
+        } catch (Exception ignored) {
+        }
         String ghiChu = rs.getString("ghi_chu");
 
         return new ThanhToan(maThanhToan, maHoaDon, soTien, phuongThuc,
-                ts != null ? ts.toLocalDateTime() : null, ghiChu);
+                ts != null ? ts.toLocalDateTime() : null, maNhanVien, ghiChu);
     }
 
     @Override
@@ -49,16 +54,25 @@ public class ThanhToanDAOImpl implements ThanhToanDAO {
 
     @Override
     public boolean save(ThanhToan tt) {
-        String sql = "INSERT INTO thanh_toan (ma_thanh_toan, ma_hoa_don, so_tien, phuong_thuc, thoi_gian_giao_dich, ghi_chu) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return save(conn, tt);
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi khi lưu giao dịch thanh toán: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean save(Connection conn, ThanhToan tt) {
+        String sql = "INSERT INTO thanh_toan (ma_thanh_toan, ma_hoa_don, so_tien, phuong_thuc, thoi_gian_giao_dich, ma_nhan_vien, ghi_chu) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, tt.getMaThanhToan());
             stmt.setString(2, tt.getMaHoaDon());
             stmt.setBigDecimal(3, tt.getSoTien());
             stmt.setString(4, tt.getPhuongThuc().name());
             stmt.setTimestamp(5, Timestamp.valueOf(tt.getThoiGianGiaoDich() != null ? tt.getThoiGianGiaoDich() : LocalDateTime.now()));
-            stmt.setString(6, tt.getGhiChu());
+            stmt.setString(6, tt.getMaNhanVien());
+            stmt.setString(7, tt.getGhiChu());
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new DataAccessException("Lỗi khi lưu giao dịch thanh toán: " + e.getMessage(), e);
@@ -66,10 +80,9 @@ public class ThanhToanDAOImpl implements ThanhToanDAO {
     }
 
     @Override
-    public BigDecimal tinhTongTienDaThanhToan(String maHoaDon) {
+    public BigDecimal tinhTongTienDaThanhToan(Connection conn, String maHoaDon) {
         String sql = "SELECT COALESCE(SUM(so_tien), 0) FROM thanh_toan WHERE ma_hoa_don = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, maHoaDon);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -80,5 +93,14 @@ public class ThanhToanDAOImpl implements ThanhToanDAO {
             throw new DataAccessException("Lỗi khi tính tổng tiền đã thanh toán: " + e.getMessage(), e);
         }
         return BigDecimal.ZERO;
+    }
+
+    @Override
+    public BigDecimal tinhTongTienDaThanhToan(String maHoaDon) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return tinhTongTienDaThanhToan(conn, maHoaDon);
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi khi tính tổng tiền đã thanh toán: " + e.getMessage(), e);
+        }
     }
 }

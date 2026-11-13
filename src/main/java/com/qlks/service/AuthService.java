@@ -19,9 +19,14 @@ public class AuthService {
     private final TaiKhoanDAO taiKhoanDAO;
     private final NhanVienDAO nhanVienDAO;
 
-    // Quản lý phiên làm việc người dùng hiện tại (Current User Session)
-    private static TaiKhoan taiKhoanHienTai;
-    private static NhanVien nhanVienHienTai;
+    /**
+     * Bản ghi đại diện cho phiên người dùng bất biến (Immutable User Session),
+     * đảm bảo đọc/ghi nguyên tử 100% không bao giờ bị lệch trạng thái giữa TaiKhoan và NhanVien.
+     */
+    public record UserSession(TaiKhoan taiKhoan, NhanVien nhanVien) {}
+
+    // Con trỏ phiên làm việc nguyên tử (Atomic Reference qua volatile)
+    private static volatile UserSession currentSession;
 
     public AuthService() {
         this.taiKhoanDAO = new TaiKhoanDAOImpl();
@@ -60,9 +65,9 @@ public class AuthService {
             throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác.");
         }
 
-        // Đăng nhập thành công, lưu thông tin vào phiên làm việc
-        taiKhoanHienTai = tk;
-        nhanVienHienTai = nhanVienDAO.findByTenDangNhap(tk.getTenDangNhap()).orElse(null);
+        // Đăng nhập thành công, lưu thông tin vào phiên làm việc nguyên tử
+        NhanVien nv = nhanVienDAO.findByTenDangNhap(tk.getTenDangNhap()).orElse(null);
+        setSession(tk, nv);
 
         return tk;
     }
@@ -99,22 +104,50 @@ public class AuthService {
     }
 
     /**
-     * Đăng xuất khỏi hệ thống.
+     * Thiết lập đồng thời phiên làm việc nguyên tử (Atomic Session Update).
      */
-    public void dangXuat() {
-        taiKhoanHienTai = null;
-        nhanVienHienTai = null;
+    public static synchronized void setSession(TaiKhoan tk, NhanVien nv) {
+        currentSession = (tk == null && nv == null) ? null : new UserSession(tk, nv);
+    }
+
+    /**
+     * Đăng xuất khỏi hệ thống an toàn đa luồng.
+     */
+    public static synchronized void dangXuat() {
+        currentSession = null;
+    }
+
+    /**
+     * Lấy snapshot phiên làm việc hiện tại một cách nguyên tử.
+     */
+    public static UserSession getSession() {
+        return currentSession;
     }
 
     public static TaiKhoan getTaiKhoanHienTai() {
-        return taiKhoanHienTai;
+        UserSession s = currentSession;
+        return s != null ? s.taiKhoan() : null;
+    }
+
+    public static synchronized void setTaiKhoanHienTai(TaiKhoan tk) {
+        UserSession s = currentSession;
+        NhanVien nv = (s != null) ? s.nhanVien() : null;
+        currentSession = (tk == null && nv == null) ? null : new UserSession(tk, nv);
     }
 
     public static NhanVien getNhanVienHienTai() {
-        return nhanVienHienTai;
+        UserSession s = currentSession;
+        return s != null ? s.nhanVien() : null;
+    }
+
+    public static synchronized void setNhanVienHienTai(NhanVien nv) {
+        UserSession s = currentSession;
+        TaiKhoan tk = (s != null) ? s.taiKhoan() : null;
+        currentSession = (tk == null && nv == null) ? null : new UserSession(tk, nv);
     }
 
     public static boolean isAdmin() {
-        return taiKhoanHienTai != null && taiKhoanHienTai.getVaiTro() == com.qlks.model.enums.VaiTro.ADMIN;
+        UserSession s = currentSession;
+        return s != null && s.taiKhoan() != null && s.taiKhoan().getVaiTro() == com.qlks.model.enums.VaiTro.ADMIN;
     }
 }

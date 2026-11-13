@@ -52,6 +52,10 @@ public final class UIUtil {
         JOptionPane.showMessageDialog(parent, message, "Thành công", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    public static void showInfo(Component parent, String message) {
+        JOptionPane.showMessageDialog(parent, message, "Thông tin", JOptionPane.INFORMATION_MESSAGE);
+    }
+
     public static void showError(Component parent, String message) {
         JOptionPane.showMessageDialog(parent, message, "Thông báo lỗi", JOptionPane.ERROR_MESSAGE);
     }

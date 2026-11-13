@@ -16,8 +16,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
 
         <!-- Phiên bản thư viện -->
         <mysql.version>8.3.0</mysql.version>
@@ -25,7 +24,10 @@
         <jakarta.el.version>4.0.2</jakarta.el.version>
         <jbcrypt.version>0.4</jbcrypt.version>
         <flatlaf.version>3.4.1</flatlaf.version>
+        <hikaricp.version>6.3.3</hikaricp.version>
+        <slf4j.version>2.0.17</slf4j.version>
         <junit.version>5.10.2</junit.version>
+        <exec.mainClass>com.qlks.Main</exec.mainClass>
     </properties>
 
     <dependencies>
@@ -64,7 +66,31 @@
             <version>${flatlaf.version}</version>
         </dependency>
 
-        <!-- 6. JUnit Jupiter (Kiểm thử đơn vị tự động) -->
+        <!-- 6. Google ZXing (Sinh mã QR Code thanh toán ngân hàng offline) -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+
+        <!-- 7. HikariCP (Connection Pool hiệu năng cao, chống cạn kiệt Connection) -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${hikaricp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- 8. JUnit Jupiter (Kiểm thử đơn vị tự động) -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -81,8 +107,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.12.1</version>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
+                    <release>${maven.compiler.release}</release>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
@@ -100,7 +125,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.2.0</version>
                 <configuration>
-                    <mainClass>com.qlks.Main</mainClass>
+                    <mainClass>${exec.mainClass}</mainClass>
                 </configuration>
             </plugin>
         </plugins>

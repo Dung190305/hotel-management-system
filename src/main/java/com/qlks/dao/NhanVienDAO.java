@@ -24,4 +24,11 @@ public interface NhanVienDAO extends BaseDAO<NhanVien, String> {
      * Cập nhật trạng thái ngừng hoạt động (Soft delete) của nhân viên.
      */
     boolean updateTrangThaiHoatDong(String maNhanVien, boolean dangHoatDong);
+
+    /**
+     * Thêm mới nhân viên trong một Transaction hiện hành.
+     */
+    default boolean save(java.sql.Connection conn, NhanVien nhanVien) {
+        return save(nhanVien);
+    }
 }

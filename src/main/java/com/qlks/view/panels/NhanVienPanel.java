@@ -4,8 +4,9 @@ import com.qlks.model.LeTan;
 import com.qlks.model.NhanVien;
 import com.qlks.model.QuanLy;
 import com.qlks.model.enums.VaiTro;
-import com.qlks.service.NhanVienService;
+import com.qlks.controller.NhanVienController;
 import com.qlks.util.FormatUtil;
+import com.qlks.util.IdGenerator;
 import com.qlks.util.UIUtil;
 
 import javax.swing.*;
@@ -17,17 +18,19 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import com.qlks.view.RefreshablePanel;
+
 /**
  * Màn hình Quản lý Nhân viên & Tính Bảng Lương Đa hình (Dành cho Quản lý / Admin).
  */
-public class NhanVienPanel extends JPanel {
+public class NhanVienPanel extends JPanel implements RefreshablePanel {
 
-    private final NhanVienService nhanVienService;
+    private final NhanVienController nhanVienController;
     private JTable tblNhanVien;
     private DefaultTableModel modelNhanVien;
 
     public NhanVienPanel() {
-        this.nhanVienService = new NhanVienService();
+        this.nhanVienController = new NhanVienController();
         initComponents();
         loadDuLieu();
     }
@@ -89,7 +92,7 @@ public class NhanVienPanel extends JPanel {
     }
 
     public void loadDuLieu() {
-        List<NhanVien> list = nhanVienService.layTatCaNhanVien();
+        List<NhanVien> list = nhanVienController.layTatCaNhanVien();
         modelNhanVien.setRowCount(0);
 
         for (NhanVien nv : list) {
@@ -120,7 +123,7 @@ public class NhanVienPanel extends JPanel {
      * Gọi nv.tinhLuong() tự động phân giải tại Runtime cho LeTan và QuanLy.
      */
     private void hienThiBangLuongPolymorphism() {
-        Map<String, Object> ketQua = nhanVienService.tinhBangLuong();
+        Map<String, Object> ketQua = nhanVienController.tinhBangLuong();
         @SuppressWarnings("unchecked")
         List<NhanVien> ds = (List<NhanVien>) ketQua.get("danhSachNhanVien");
         BigDecimal tongQuyLuong = (BigDecimal) ketQua.get("tongQuyLuong");
@@ -188,17 +191,20 @@ public class NhanVienPanel extends JPanel {
     }
 
     private void hienThiDialogThemNhanVien() {
-        JTextField txtMa = new JTextField("NV" + System.currentTimeMillis() % 10000);
+        JTextField txtMa = new JTextField(IdGenerator.next("NV"));
+        txtMa.setEditable(false);
+        txtMa.setBackground(new Color(245, 247, 250));
+
         JTextField txtTen = new JTextField();
         JTextField txtSdt = new JTextField();
         JTextField txtEmail = new JTextField();
-        JComboBox<String> cboChucVu = new JComboBox<>(new String[]{"Lễ tân", "Quản lý"});
+        JComboBox<String> cboChucVu = new JComboBox<>(new String[]{"Lễ tân", "Quản lý (Manager)", "Quản trị viên (Admin)"});
         JTextField txtLuongCb = new JTextField("7000000");
 
         JTextField txtUser = new JTextField();
         JPasswordField txtPass = new JPasswordField("123456");
 
-        // Tham số chức vụ
+        // Tham số đa hình theo chức vụ OOP
         JSpinner spnCa = new JSpinner(new SpinnerNumberModel(26, 0, 60, 1));
         JTextField txtThuongCa = new JTextField("150000");
         JSpinner spnHeSo = new JSpinner(new SpinnerNumberModel(1.5, 1.0, 5.0, 0.1));
@@ -208,17 +214,19 @@ public class NhanVienPanel extends JPanel {
         txtThuongHq.setEnabled(false);
 
         cboChucVu.addActionListener(e -> {
-            boolean isQl = cboChucVu.getSelectedIndex() == 1;
+            boolean isQl = cboChucVu.getSelectedIndex() >= 1;
             spnCa.setEnabled(!isQl);
             txtThuongCa.setEnabled(!isQl);
             spnHeSo.setEnabled(isQl);
             txtThuongHq.setEnabled(isQl);
             if (isQl && txtLuongCb.getText().equals("7000000")) {
                 txtLuongCb.setText("15000000");
+            } else if (!isQl && txtLuongCb.getText().equals("15000000")) {
+                txtLuongCb.setText("7000000");
             }
         });
 
-        JPanel panel = new JPanel(new GridLayout(10, 2, 8, 8));
+        JPanel panel = new JPanel(new GridLayout(12, 2, 8, 8));
         panel.add(new JLabel("Mã nhân viên:"));
         panel.add(txtMa);
         panel.add(new JLabel("Họ và tên:"));
@@ -235,10 +243,16 @@ public class NhanVienPanel extends JPanel {
         panel.add(txtUser);
         panel.add(new JLabel("Mật khẩu khởi tạo:"));
         panel.add(txtPass);
-        panel.add(new JLabel("Số ca / Hệ số TN:"));
-        panel.add(cboChucVu.getSelectedIndex() == 1 ? spnHeSo : spnCa);
-        panel.add(new JLabel("Thưởng ca / Thưởng HQ:"));
-        panel.add(cboChucVu.getSelectedIndex() == 1 ? txtThuongHq : txtThuongCa);
+
+        panel.add(new JLabel("Số ca trực (Lễ tân):"));
+        panel.add(spnCa);
+        panel.add(new JLabel("Thưởng mỗi ca (Lễ tân):"));
+        panel.add(txtThuongCa);
+
+        panel.add(new JLabel("Hệ số trách nhiệm (Quản lý):"));
+        panel.add(spnHeSo);
+        panel.add(new JLabel("Thưởng hiệu quả (Quản lý):"));
+        panel.add(txtThuongHq);
 
         int result = JOptionPane.showConfirmDialog(this, panel, "Thêm nhân viên mới", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
@@ -253,11 +267,12 @@ public class NhanVienPanel extends JPanel {
 
                 NhanVien nvMoi;
                 VaiTro vaiTro;
-                if (cboChucVu.getSelectedIndex() == 1) {
+                int chucVuIdx = cboChucVu.getSelectedIndex();
+                if (chucVuIdx >= 1) {
                     double heSo = (Double) spnHeSo.getValue();
                     BigDecimal thuongHq = FormatUtil.parseTien(txtThuongHq.getText());
                     nvMoi = new QuanLy(ma, ten, sdt, email, user, LocalDate.now(), luongCb, true, heSo, thuongHq);
-                    vaiTro = VaiTro.ADMIN;
+                    vaiTro = (chucVuIdx == 2) ? VaiTro.ADMIN : VaiTro.MANAGER;
                 } else {
                     int ca = (Integer) spnCa.getValue();
                     BigDecimal thuongCa = FormatUtil.parseTien(txtThuongCa.getText());
@@ -265,7 +280,7 @@ public class NhanVienPanel extends JPanel {
                     vaiTro = VaiTro.LE_TAN;
                 }
 
-                nhanVienService.themNhanVien(nvMoi, user, pass, vaiTro);
+                nhanVienController.themNhanVien(nvMoi, user, pass, vaiTro);
                 UIUtil.showSuccess(this, "Thêm nhân viên và tạo tài khoản thành công!");
                 loadDuLieu();
             } catch (Exception ex) {

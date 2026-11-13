@@ -55,4 +55,79 @@ public interface DatPhongDAO extends BaseDAO<DatPhong, String> {
      * @return true nếu BỊ TRÙNG (không thể đặt), false nếu PHÒNG TRỐNG (có thể đặt)
      */
     boolean isPhongBiTrungLich(String maPhong, LocalDateTime ngayNhanMoi, LocalDateTime ngayTraMoi, String excludeMaDatPhong);
+
+    /**
+     * Kiểm tra xem phòng có lượt đặt phòng nào đã xác nhận (DA_XAC_NHAN) trong ngày chỉ định hay không.
+     */
+    boolean hasDatPhongXacNhanTrongNgay(String maPhong, java.time.LocalDate ngay);
+
+    /**
+     * Tìm phiếu đặt phòng theo mã trong một Transaction hiện hành.
+     */
+    default java.util.Optional<DatPhong> findById(java.sql.Connection conn, String maDatPhong) {
+        return findById(maDatPhong);
+    }
+
+    /**
+     * Khóa dòng phiếu đặt phòng bằng SELECT ... FOR UPDATE trong Transaction
+     * để chống xung đột tương tranh khi Check-in, Check-out hoặc Hủy phòng.
+     */
+    default java.util.Optional<DatPhong> findByIdForUpdate(java.sql.Connection conn, String maDatPhong) {
+        return findById(conn, maDatPhong);
+    }
+
+    /**
+     * Lưu phiếu đặt phòng trong một Transaction hiện hành.
+     */
+    default boolean save(java.sql.Connection conn, DatPhong datPhong) {
+        return save(datPhong);
+    }
+
+    /**
+     * Cập nhật trạng thái đặt phòng trong một Transaction hiện hành.
+     */
+    default boolean updateTrangThai(java.sql.Connection conn, String maDatPhong, TrangThaiDatPhong trangThaiMoi) {
+        return updateTrangThai(maDatPhong, trangThaiMoi);
+    }
+
+    /**
+     * Xác nhận Check-in trong một Transaction hiện hành kèm ghi nhận nhân viên thực hiện (Audit Trail).
+     */
+    default boolean xacNhanCheckIn(java.sql.Connection conn, String maDatPhong, LocalDateTime thoiGianCheckInThucTe, String maNvCheckIn) {
+        return xacNhanCheckIn(conn, maDatPhong, thoiGianCheckInThucTe);
+    }
+
+    /**
+     * Xác nhận Check-in trong một Transaction hiện hành.
+     */
+    default boolean xacNhanCheckIn(java.sql.Connection conn, String maDatPhong, LocalDateTime thoiGianCheckInThucTe) {
+        return xacNhanCheckIn(maDatPhong, thoiGianCheckInThucTe);
+    }
+
+    /**
+     * Xác nhận Check-out trong một Transaction hiện hành kèm ghi nhận nhân viên thực hiện (Audit Trail).
+     */
+    default boolean xacNhanCheckOut(java.sql.Connection conn, String maDatPhong, LocalDateTime thoiGianCheckOutThucTe, String maNvCheckOut) {
+        return xacNhanCheckOut(conn, maDatPhong, thoiGianCheckOutThucTe);
+    }
+
+    /**
+     * Xác nhận Check-out trong một Transaction hiện hành.
+     */
+    default boolean xacNhanCheckOut(java.sql.Connection conn, String maDatPhong, LocalDateTime thoiGianCheckOutThucTe) {
+        return xacNhanCheckOut(maDatPhong, thoiGianCheckOutThucTe);
+    }
+
+    /**
+     * Kiểm tra trùng lịch phòng với khóa dòng FOR UPDATE trong Transaction để chống đặt phòng đồng thời.
+     */
+    boolean isPhongBiTrungLich(java.sql.Connection conn, String maPhong, LocalDateTime ngayNhanMoi, LocalDateTime ngayTraMoi, String excludeMaDatPhong);
+
+    /**
+     * Kiểm tra xem phòng hiện tại có đơn đặt phòng nào khác đang ở trạng thái DANG_O hay không.
+     * Sử dụng trong transaction Check-in để chống hai đơn khác nhau cùng Check-in vào 1 phòng.
+     */
+    default boolean isPhongDangCoNguoiO(java.sql.Connection conn, String maPhong, String excludeMaDatPhong) {
+        return false;
+    }
 }

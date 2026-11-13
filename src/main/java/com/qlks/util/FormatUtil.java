@@ -41,7 +41,8 @@ public final class FormatUtil {
      * Định dạng ngày: dd/MM/yyyy
      */
     public static String formatNgay(LocalDate ngay) {
-        if (ngay == null) return "";
+        if (ngay == null)
+            return "";
         return ngay.format(DATE_FORMATTER);
     }
 
@@ -49,7 +50,8 @@ public final class FormatUtil {
      * Định dạng ngày giờ: dd/MM/yyyy HH:mm
      */
     public static String formatNgayGio(LocalDateTime ngayGio) {
-        if (ngayGio == null) return "";
+        if (ngayGio == null)
+            return "";
         return ngayGio.format(DATE_TIME_FORMATTER);
     }
 

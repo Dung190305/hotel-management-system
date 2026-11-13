@@ -1,112 +1,98 @@
 # ĐỒ ÁN MÔN HỌC: LẬP TRÌNH HƯỚNG ĐỐI TƯỢNG (OOP)
 # HỆ THỐNG QUẢN LÝ KHÁCH SẠN (HOTEL MANAGEMENT SYSTEM)
 
-**Ngôn ngữ:** Java 17 / 21 LTS  
-**Giao diện Desktop:** Java Swing + FlatLaf  
-**Cơ sở dữ liệu:** MySQL 8.0 (Kết nối JDBC thuần)  
-**Kiểm tra dữ liệu:** Hibernate Validator (Jakarta Bean Validation 3.0)  
-**Mã hóa bảo mật:** jBCrypt  
-**Quản lý thư viện:** Apache Maven  
-**Kiểm thử tự động:** JUnit 5  
+**Ngôn ngữ & Nền tảng:** Java 21 LTS  
+**Giao diện Desktop:** Java Swing (FlatLaf Modern UI + MVC Controller + SwingWorker đa luồng)  
+**Cơ sở dữ liệu:** MySQL 8.0 (Kết nối JDBC thuần, Transaction ACID & Khóa dòng `SELECT ... FOR UPDATE`)  
+**Kiểm tra tính hợp lệ dữ liệu:** Hibernate Validator (Jakarta Bean Validation 3.0)  
+**Mã hóa bảo mật mật khẩu:** BCrypt (jBCrypt)  
+**Quản lý mã định danh:** `IdGenerator` nguyên tử qua bảng `id_sequence` với MySQL `LAST_INSERT_ID`  
+**Quản lý thư viện & Build:** Apache Maven  
+**Kiểm thử tự động:** JUnit 5 (38 bài Unit Test pass 100%)  
 
 ---
 
 ## 1. HƯỚNG DẪN KHỞI CHẠY ỨNG DỤNG
 
-### Bước 1: Khởi động MySQL & Kiểm tra Database
-- Đảm bảo dịch vụ `MySQL80` trên máy đang ở trạng thái **Running**.
-- Database `hotel_db` đã được nạp sẵn toàn bộ cấu trúc và dữ liệu mẫu từ file `database/hotel_management.sql`.
-- File cấu hình kết nối nằm tại: `src/main/resources/database.properties`.
+### Bước 1: Nạp Cơ sở dữ liệu MySQL
+Hệ thống cung cấp 2 cách nạp cơ sở dữ liệu:
+* **Cách 1 (Một lệnh duy nhất):** Mở MySQL Workbench hoặc CLI và chạy file:
+  ```sql
+  source database/hotel_management.sql;
+  ```
+* **Cách 2 (Phân tách chuẩn Schema & Seed):**
+  1. Chạy cấu trúc bảng: `source database/schema.sql;`
+  2. Chạy dữ liệu mẫu ban đầu: `source database/seed.sql;`
 
-### Bước 2: Chạy ứng dụng từ Terminal / Command Prompt
+### Bước 2: Cấu hình kết nối Database & Biến môi trường
+Hệ thống hỗ trợ 2 cơ chế cấu hình kết nối CSDL (ưu tiên biến môi trường để bảo mật):
+1. **Biến môi trường (Khuyến nghị):**
+   - `DB_URL`: `jdbc:mysql://localhost:3306/hotel_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Ho_Chi_Minh`
+   - `DB_USER`: Tài khoản MySQL (mặc định: `root`)
+   - `DB_PASSWORD`: Mật khẩu MySQL
+2. **File cấu hình nội bộ (Fallback):**
+   - Đặt tại `src/main/resources/database.properties` (file đã được đưa vào `.gitignore` để tránh lộ thông tin bảo mật).
+
+### Bước 3: Chạy ứng dụng từ Terminal / Command Prompt
 Mở terminal tại thư mục gốc của dự án (`QLKS`) và gõ lệnh:
 ```bash
 mvn exec:java
 ```
 Ứng dụng sẽ tự động tải các tài nguyên và mở lên cửa sổ đăng nhập `LoginFrame`.
 
-### Bước 3: Chạy toàn bộ bài kiểm thử tự động (Unit Test)
+### Bước 4: Chạy toàn bộ bài kiểm thử tự động (Unit Test)
 ```bash
+# Chạy bộ 38 Unit Test kiểm tra toàn bộ nghiệp vụ (không phụ thuộc kết nối MySQL):
+mvn test -Dtest="AppTest,ModelOopTest,ThongBaoServiceTest,IdGeneratorTest,AuthorizationTest,TransactionRollbackTest,CheckInBusinessRuleTest,DichVuGhiNhanTest"
+
+# Hoặc chạy toàn bộ test suite:
 mvn test
 ```
-Toàn bộ 13 bài test kiểm tra kế thừa, đa hình, Bean Validation, JDBC thực tế và các quy tắc nghiệp vụ sẽ được thực thi tự động.
 
 ---
 
-## 2. TÀI KHOẢN ĐĂNG NHẬP MẪU
+## 2. MA TRẬN PHÂN QUYỀN VÀ TÀI KHOẢN ĐĂNG NHẬP MẪU
 
-| Vai trò | Tên đăng nhập | Mật khẩu mặc định | Quyền hạn trong hệ thống |
-| :--- | :---: | :---: | :--- |
-| **Quản trị / Quản lý (Admin)** | `admin` | `admin123` | Toàn quyền: Xem báo cáo, quản lý danh mục phòng, khách hàng, đặt phòng, hóa đơn, **Quản lý nhân viên & Tính bảng lương**. |
-| **Lễ tân (Receptionist)** | `letan01` | `letan123` | Nghiệp vụ tiếp tân: Sơ đồ phòng, Đặt phòng, Check-in, Check-out, Hóa đơn & Thu tiền dịch vụ. *(Ẩn tab Quản lý nhân viên)*. |
-| **Lễ tân 2** | `letan02` | `letan123` | Tương tự lễ tân 1. |
+Hệ thống triển khai mô hình kiểm soát truy cập dựa trên vai trò (RBAC) nghiêm ngặt tại tầng Service (`AuthorizationService.require(Permission)`):
 
----
+| Chức năng nghiệp vụ | ADMIN (Quản trị) | MANAGER (Quản lý) | LE_TAN (Lễ tân) |
+| :--- | :---: | :---: | :---: |
+| Quản lý tài khoản và nhân viên |  | ❌ | ❌ |
+| Sửa cấu hình phòng, dịch vụ (danh mục) |  |  | ❌ |
+| Thêm và sửa khách hàng |  |  |  |
+| Tạo, hủy đặt phòng; Check-in / Check-out |  |  |  |
+| Ghi nhận dịch vụ và thanh toán hóa đơn |  |  |  |
+| Xem báo cáo, thống kê doanh thu |  |  | ❌ |
 
-## 3. CÁC KỊCH BẢN THAO TÁC MẪU (DEMO WORKFLOW)
-
-### Kịch bản 1: Sơ đồ phòng 5 màu & Đổi trạng thái phòng
-1. Đăng nhập bằng `letan01` / `letan123`.
-2. Vào tab **"Sơ đồ & Danh mục Phòng"**:
-   - Thấy sơ đồ phòng trực quan dạng thẻ màu:
-     * 🟢 **Còn trống (AVAILABLE)**
-     * 🔴 **Đang có khách (OCCUPIED)**
-     * 🟡 **Đã đặt (RESERVED)**
-     * 🔵 **Đang dọn dẹp (CLEANING)**
-     * ⚪ **Đang bảo trì (MAINTENANCE)**
-   - Click chuột phải hoặc click trực tiếp vào một phòng để đổi trạng thái nhanh (ví dụ: chuyển phòng sau khi buồng phòng dọn xong từ `CLEANING` về `AVAILABLE`).
-
-### Kịch bản 2: Đặt phòng & Chống trùng lịch (Quy tắc nghiệp vụ cốt lõi)
-1. Vào tab **"Đặt phòng (Booking)"** $\rightarrow$ Bấm nút **"+ Tạo đơn đặt phòng"**.
-2. Chọn khách hàng (hoặc thêm khách mới), chọn ngày nhận phòng và ngày trả phòng.
-3. Hộp thoại tự động tải danh sách **phòng trống thực tế** và tính số đêm + tạm tính tiền.
-4. Nếu cố tình chọn phòng đã có khách đặt trong khoảng ngày đó, hệ thống sẽ từ chối và hiện thông báo lỗi tiếng Việt dễ hiểu.
-
-### Kịch bản 3: Quy trình Check-in, Check-out & Tự động lập Hóa đơn
-1. Vào tab **"Tiếp tân: Check-in / Out"**:
-   - **Tab 1 (Check-in):** Chọn khách đến nhận phòng $\rightarrow$ Bấm **"Xác nhận Check-in"** $\rightarrow$ Phòng tự chuyển sang màu đỏ (`OCCUPIED`).
-   - **Tab 2 (Check-out):** Chọn phòng đang có khách trả phòng $\rightarrow$ Bấm **"Trả phòng & Lập hóa đơn"** $\rightarrow$ Phòng tự động chuyển sang màu xanh dương (`CLEANING`) và sinh hóa đơn thanh toán.
-
-### Kịch bản 4: Gọi dịch vụ phát sinh & Thanh toán chống trùng lặp
-1. Vào tab **"Hóa đơn & Thanh toán"**:
-   - Chọn hóa đơn vừa tạo $\rightarrow$ Bấm **"+ Thêm dịch vụ vào phòng"** (chọn nước ngọt, bia, giặt là...) $\rightarrow$ Hệ thống tự động cộng dồn tiền dịch vụ.
-   - Bấm **"Xem chi tiết hóa đơn"** để xem phiếu tính tiền.
-   - Bấm **"THANH TOÁN NGAY"** $\rightarrow$ Chọn Tiền mặt hoặc Chuyển khoản $\rightarrow$ Xác nhận thanh toán $\rightarrow$ Hóa đơn chuyển sang `ĐÃ THANH TOÁN`.
-   - Nếu bấm thanh toán lại lần nữa trên hóa đơn này, hệ thống sẽ chặn đứng và báo lỗi: *"Hóa đơn đã được thanh toán đầy đủ trước đó!"* (Chống thanh toán trùng lặp).
-
-### Kịch bản 5: Quản lý nhân viên & Tính bảng lương đa hình (OOP)
-1. Đăng xuất và đăng nhập lại bằng tài khoản Quản lý: `admin` / `admin123`.
-2. Xuất hiện thêm tab **"Nhân sự & Tính lương"**.
-3. Bấm nút **"💰 BẢNG TÍNH LƯƠNG (OOP)"**:
-   - Hệ thống tự động tính lương theo Đa hình:
-     * Lễ tân tính theo ca trực: `Lương cơ bản + Số ca * Thưởng ca`
-     * Quản lý tính theo trách nhiệm: `Lương cơ bản * Hệ số + Thưởng hiệu quả`
-   - Hiển thị tổng quỹ lương cần chi trả của khách sạn.
+### Danh sách tài khoản thử nghiệm ban đầu:
+* **Quản trị viên (Admin):** `admin` / mật khẩu: `admin123` (Toàn quyền hệ thống).
+* **Quản lý điều hành (Manager):** `manager` / mật khẩu: `manager123` (Quản lý danh mục, đặt phòng, hóa đơn và xem báo cáo).
+* **Lễ tân 1 (Receptionist):** `letan01` / mật khẩu: `letan123` (Nghiệp vụ tiếp tân, check-in, check-out, hóa đơn).
+* **Lễ tân 2:** `letan02` / mật khẩu: `letan123`.
 
 ---
 
-## 4. HƯỚNG DẪN TRẢ LỜI PHẢN BIỆN KHI BẢO VỆ ĐỒ ÁN OOP
+## 3. CÁC ĐIỂM SÁNG KIẾN TRÚC & NGHIỆP VỤ OOP
 
-Khi thầy cô đặt câu hỏi, hãy sử dụng các luận điểm sau:
+1. **Đa hình (Polymorphism):**
+   - Phân cấp `Phong` $\rightarrow$ `PhongThuong`, `PhongVIP`: đa hình phương thức `tinhTienPhong(soDem)` (phòng VIP tính thêm phụ phí dịch vụ và ban công view biển).
+   - Phân cấp `NhanVien` $\rightarrow$ `LeTan`, `QuanLy`: đa hình phương thức `tinhLuongThucNhan()` (Lễ tân tính theo số ca trực, Quản lý tính theo hệ số trách nhiệm và thưởng hiệu quả).
 
-### Câu 1: Em hãy chỉ ra tính Kế thừa (Inheritance) trong đồ án?
-- **Trả lời:** Em xây dựng phân cấp kế thừa từ lớp cha trừu tượng `NguoiDung`:
-  + `NguoiDung` $\rightarrow$ `KhachHang` và `NhanVien`.
-  + `NhanVien` $\rightarrow$ `LeTan` và `QuanLy`.
-  + Lớp cha `Phong` $\rightarrow$ `PhongThuong` và `PhongVIP`.
-  Toàn bộ thuộc tính chung (mã định danh, họ tên, số điện thoại, đơn giá ngày...) được tái sử dụng ở lớp cha, giúp tránh lặp mã nguồn (DRY).
+2. **Gắn Dịch vụ theo Phiếu đặt phòng (Booking Service Binding):**
+   - Dịch vụ phát sinh (`ChiTietDichVu`) gắn trực tiếp vào phiếu đặt phòng đang lưu trú (`ma_dat_phong`) với trạng thái `DANG_O`.
+   - Lưu vết đơn giá tại thời điểm sử dụng (Snapshot Price): khi bảng giá dịch vụ thay đổi trong tương lai, chi tiết dịch vụ cũ không bao giờ bị tính sai giá.
+   - Khi làm thủ tục trả phòng (Check-out), hệ thống tự động tổng hợp tiền dịch vụ vào hóa đơn.
 
-### Câu 2: Tính Đa hình (Polymorphism) được thể hiện ở đoạn code nào?
-- **Trả lời:** Em thể hiện đa hình ở 2 nơi quan trọng nhất:
-  1. Phương thức trừu tượng `tinhLuong()` trong lớp cha `NhanVien`: Lớp con `LeTan` ghi đè tính theo số ca trực (`luongCoBan + soCa * thuongCa`), lớp con `QuanLy` ghi đè tính theo hệ số trách nhiệm (`luongCoBan * heSo + thuongHieuQua`). Khi tính bảng lương trong `NhanVienService`, em chỉ cần duyệt danh sách `List<NhanVien>` và gọi `nv.tinhLuong()` mà không cần bất kỳ câu lệnh `if-else` nào để kiểm tra loại nhân viên.
-  2. Phương thức trừu tượng `tinhTienPhong(long soNgay)` trong lớp `Phong`: `PhongThuong` tính theo đơn giá và giảm 5% khi ở từ 7 ngày; `PhongVIP` có phụ phí VIP và giảm 10% khi ở từ 5 ngày. Khi đặt phòng, em chỉ cần gọi `phong.tinhTienPhong()`.
+3. **Toàn vẹn Transaction & Concurrency Control:**
+   - Mọi luồng ghi nhiều bảng (`Check-in`, `Check-out`, `Thanh toán`) đều chạy trong 1 `Connection` với `conn.setAutoCommit(false)`, `commit()` và `rollback()` tự động.
+   - Sử dụng `SELECT ... FOR UPDATE` để khóa dòng hóa đơn và dòng phòng, ngăn chặn hiện tượng 2 nhân viên cùng lúc thao tác gây trùng phòng hoặc thanh toán đè (Double Payment Prevention).
 
-### Câu 3: Tính Đóng gói (Encapsulation) được bảo đảm như thế nào?
-- **Trả lời:** Toàn bộ thuộc tính trong các lớp Model đều là `private`. Quyền truy xuất thông qua getter và setter. Đặc biệt, em tích hợp **Hibernate Validator (Jakarta Bean Validation)** với các annotation (`@NotBlank`, `@Pattern`, `@DecimalMin`...) để ngăn chặn dữ liệu bẩn ngay từ tầng đối tượng.
+4. **Kiến trúc phân tầng Controller & SwingWorker:**
+   - Tầng Giao diện (Swing View) hoàn toàn tách biệt khỏi tầng Nghiệp vụ (Service) thông qua các lớp `*Controller`.
+   - Các tác vụ nặng hoặc gọi Service đều chạy trên background thread (`SwingWorker`), giữ giao diện luôn mượt mà và chống treo ứng dụng (No UI Freeze).
 
-### Câu 4: Tính Trừu tượng (Abstraction) và Quan hệ đối tượng?
-- **Trả lời:**
-  - `NguoiDung`, `NhanVien`, `Phong` là các `abstract class`, không cho phép khởi tạo trực tiếp đối tượng chung chung.
-  - Các `interface` trong tầng DAO (`BaseDAO<T, ID>`, `PhongDAO`, `DatPhongDAO`...) định nghĩa các hành vi mà không làm lộ chi tiết câu lệnh SQL.
-  - Quan hệ **Association**: `DatPhong` liên kết với `KhachHang`, `Phong` và `NhanVien`.
-  - Quan hệ **Composition**: `HoaDon` chứa danh sách các `ChiTietDichVu`. Chi tiết dịch vụ chỉ tồn tại khi gắn với một hóa đơn cụ thể.
+5. **Chuông thông báo trực quan theo đơn tới hạn:**
+   - Biểu tượng chuông với dấu chấm than thông minh:
+     * **Màu đỏ:** Có đơn tới hạn cần xử lý chưa đọc.
+     * **Màu xanh:** Tất cả thông báo đã được xem.
+     * **Không có dấu than:** Không có đơn nào tới hạn.

@@ -30,6 +30,7 @@ public class ThanhToan implements Serializable {
     private PhuongThucThanhToan phuongThuc;
 
     private LocalDateTime thoiGianGiaoDich;
+    private String maNhanVien;
     private String ghiChu;
 
     public ThanhToan() {
@@ -40,11 +41,17 @@ public class ThanhToan implements Serializable {
 
     public ThanhToan(String maThanhToan, String maHoaDon, BigDecimal soTien,
                      PhuongThucThanhToan phuongThuc, LocalDateTime thoiGianGiaoDich, String ghiChu) {
+        this(maThanhToan, maHoaDon, soTien, phuongThuc, thoiGianGiaoDich, null, ghiChu);
+    }
+
+    public ThanhToan(String maThanhToan, String maHoaDon, BigDecimal soTien,
+                     PhuongThucThanhToan phuongThuc, LocalDateTime thoiGianGiaoDich, String maNhanVien, String ghiChu) {
         this.maThanhToan = maThanhToan;
         this.maHoaDon = maHoaDon;
         this.soTien = soTien != null ? soTien : BigDecimal.ZERO;
         this.phuongThuc = phuongThuc != null ? phuongThuc : PhuongThucThanhToan.TIEN_MAT;
         this.thoiGianGiaoDich = thoiGianGiaoDich != null ? thoiGianGiaoDich : LocalDateTime.now();
+        this.maNhanVien = maNhanVien;
         this.ghiChu = ghiChu;
     }
 
@@ -86,6 +93,14 @@ public class ThanhToan implements Serializable {
 
     public void setThoiGianGiaoDich(LocalDateTime thoiGianGiaoDich) {
         this.thoiGianGiaoDich = thoiGianGiaoDich;
+    }
+
+    public String getMaNhanVien() {
+        return maNhanVien;
+    }
+
+    public void setMaNhanVien(String maNhanVien) {
+        this.maNhanVien = maNhanVien;
     }
 
     public String getGhiChu() {

@@ -1,6 +1,6 @@
 package com.qlks.view.dialogs;
 
-import com.qlks.service.AuthService;
+import com.qlks.controller.AuthController;
 import com.qlks.util.UIUtil;
 
 import javax.swing.*;
@@ -11,16 +11,16 @@ import java.awt.*;
  */
 public class DoiMatKhauDialog extends JDialog {
 
-    private final AuthService authService;
+    private final AuthController authController;
     private final String tenDangNhap;
 
     private JPasswordField txtMatKhauCu;
     private JPasswordField txtMatKhauMoi;
     private JPasswordField txtXacNhan;
 
-    public DoiMatKhauDialog(Frame parent, AuthService authService, String tenDangNhap) {
+    public DoiMatKhauDialog(Frame parent, AuthController authController, String tenDangNhap) {
         super(parent, "Đổi mật khẩu - " + tenDangNhap, true);
-        this.authService = authService;
+        this.authController = authController;
         this.tenDangNhap = tenDangNhap;
 
         initComponents();
@@ -88,7 +88,7 @@ public class DoiMatKhauDialog extends JDialog {
         String xn = new String(txtXacNhan.getPassword());
 
         try {
-            authService.doiMatKhau(tenDangNhap, cu, moi, xn);
+            authController.doiMatKhau(tenDangNhap, cu, moi, xn);
             UIUtil.showSuccess(this, "Đổi mật khẩu thành công! Vui lòng ghi nhớ mật khẩu mới.");
             dispose();
         } catch (Exception ex) {

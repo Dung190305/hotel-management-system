@@ -1,27 +1,60 @@
 package com.qlks.service;
 
+import com.qlks.dao.DatPhongDAO;
+import com.qlks.dao.HoaDonDAO;
 import com.qlks.dao.KhachHangDAO;
+import com.qlks.dao.impl.DatPhongDAOImpl;
+import com.qlks.dao.impl.HoaDonDAOImpl;
 import com.qlks.dao.impl.KhachHangDAOImpl;
 import com.qlks.exception.BusinessException;
+import com.qlks.model.DatPhong;
+import com.qlks.model.HoaDon;
 import com.qlks.model.KhachHang;
+import com.qlks.model.enums.Permission;
 import com.qlks.util.ValidationUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Service xử lý nghiệp vụ quản lý khách hàng.
+ * Service xử lý nghiệp vụ quản lý khách hàng và tra cứu lịch sử lưu trú.
  */
 public class KhachHangService {
 
     private final KhachHangDAO khachHangDAO;
+    private final DatPhongDAO datPhongDAO;
+    private final HoaDonDAO hoaDonDAO;
 
     public KhachHangService() {
         this.khachHangDAO = new KhachHangDAOImpl();
+        this.datPhongDAO = new DatPhongDAOImpl();
+        this.hoaDonDAO = new HoaDonDAOImpl();
     }
 
     public KhachHangService(KhachHangDAO khachHangDAO) {
         this.khachHangDAO = khachHangDAO;
+        this.datPhongDAO = new DatPhongDAOImpl();
+        this.hoaDonDAO = new HoaDonDAOImpl();
+    }
+
+    public KhachHangService(KhachHangDAO khachHangDAO, DatPhongDAO datPhongDAO, HoaDonDAO hoaDonDAO) {
+        this.khachHangDAO = khachHangDAO;
+        this.datPhongDAO = datPhongDAO;
+        this.hoaDonDAO = hoaDonDAO;
+    }
+
+    public List<DatPhong> layLichSuDatPhong(String maKhachHang) {
+        return datPhongDAO.findByKhachHang(maKhachHang);
+    }
+
+    public List<HoaDon> layLichSuHoaDon(String maKhachHang) {
+        List<DatPhong> dsDp = datPhongDAO.findByKhachHang(maKhachHang);
+        List<HoaDon> dsHd = new ArrayList<>();
+        for (DatPhong dp : dsDp) {
+            hoaDonDAO.findByMaDatPhong(dp.getMaDatPhong()).ifPresent(dsHd::add);
+        }
+        return dsHd;
     }
 
     public List<KhachHang> layTatCaKhachHang() {
@@ -45,6 +78,7 @@ public class KhachHangService {
     }
 
     public void themKhachHang(KhachHang kh) {
+        AuthorizationService.require(Permission.QUAN_LY_KHACH_HANG);
         ValidationUtil.validate(kh);
 
         if (khachHangDAO.findById(kh.getMaKhachHang()).isPresent()) {
@@ -61,9 +95,11 @@ public class KhachHangService {
         if (!success) {
             throw new BusinessException("Thêm mới khách hàng thất bại.");
         }
+        com.qlks.util.AppEventBus.fireCustomerChanged();
     }
 
     public void capNhatKhachHang(KhachHang kh) {
+        AuthorizationService.require(Permission.QUAN_LY_KHACH_HANG);
         ValidationUtil.validate(kh);
 
         Optional<KhachHang> oldOpt = khachHangDAO.findById(kh.getMaKhachHang());
@@ -85,5 +121,6 @@ public class KhachHangService {
         if (!success) {
             throw new BusinessException("Cập nhật thông tin khách hàng thất bại.");
         }
+        com.qlks.util.AppEventBus.fireCustomerChanged();
     }
 }

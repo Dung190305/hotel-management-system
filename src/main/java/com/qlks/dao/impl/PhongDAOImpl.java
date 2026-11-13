@@ -30,13 +30,27 @@ public class PhongDAOImpl implements PhongDAO {
         TrangThaiPhong trangThai = TrangThaiPhong.fromString(rs.getString("trang_thai_hien_tai"));
         boolean kinhDoanh = rs.getBoolean("dang_kinh_doanh");
 
-        if ("PHONG_VIP".equalsIgnoreCase(loai)) {
+        com.qlks.model.enums.LoaiGiuong loaiGiuong = com.qlks.model.enums.LoaiGiuong.DON;
+        try {
+            String strGiuong = rs.getString("loai_giuong");
+            if (strGiuong != null) {
+                loaiGiuong = com.qlks.model.enums.LoaiGiuong.fromString(strGiuong);
+            } else if (loai != null && loai.toUpperCase().contains("DOI")) {
+                loaiGiuong = com.qlks.model.enums.LoaiGiuong.DOI;
+            }
+        } catch (SQLException ignored) {
+            if (loai != null && loai.toUpperCase().contains("DOI")) {
+                loaiGiuong = com.qlks.model.enums.LoaiGiuong.DOI;
+            }
+        }
+
+        if (loai != null && loai.toUpperCase().contains("VIP")) {
             boolean viewBien = rs.getBoolean("co_ban_cong_view_bien");
             BigDecimal phiVip = rs.getBigDecimal("phi_dich_vu_vip");
-            return new PhongVIP(ma, so, tang, gia, trangThai, kinhDoanh, viewBien, phiVip);
+            return new PhongVIP(ma, so, tang, gia, trangThai, loaiGiuong, kinhDoanh, viewBien, phiVip);
         } else {
             boolean coCuaSo = rs.getBoolean("co_cua_so");
-            return new PhongThuong(ma, so, tang, gia, trangThai, kinhDoanh, coCuaSo);
+            return new PhongThuong(ma, so, tang, gia, trangThai, loaiGiuong, kinhDoanh, coCuaSo);
         }
     }
 
@@ -138,29 +152,31 @@ public class PhongDAOImpl implements PhongDAO {
 
     @Override
     public boolean save(Phong phong) {
-        String sql = "INSERT INTO phong (ma_phong, so_phong, tang, loai_phong, don_gia_ngay, " +
+        String sql = "INSERT INTO phong (ma_phong, so_phong, tang, loai_phong, loai_giuong, suc_chua_toi_da, don_gia_ngay, " +
                 "trang_thai_hien_tai, co_cua_so, co_ban_cong_view_bien, phi_dich_vu_vip, dang_kinh_doanh) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, phong.getMaPhong());
             stmt.setString(2, phong.getSoPhong());
             stmt.setInt(3, phong.getTang());
             stmt.setString(4, phong.getLoaiPhong());
-            stmt.setBigDecimal(5, phong.getDonGiaNgay());
-            stmt.setString(6, phong.getTrangThaiHienTai().name());
-            stmt.setBoolean(10, phong.isDangKinhDoanh());
+            stmt.setString(5, phong.getLoaiGiuong() != null ? phong.getLoaiGiuong().name() : "DON");
+            stmt.setInt(6, phong.getSucChuaToiDa());
+            stmt.setBigDecimal(7, phong.getDonGiaNgay());
+            stmt.setString(8, phong.getTrangThaiHienTai().name());
+            stmt.setBoolean(12, phong.isDangKinhDoanh());
 
             if (phong instanceof PhongVIP) {
                 PhongVIP vip = (PhongVIP) phong;
-                stmt.setBoolean(7, true);
-                stmt.setBoolean(8, vip.isCoBanCongViewBien());
-                stmt.setBigDecimal(9, vip.getPhiDichVuVip());
+                stmt.setBoolean(9, true);
+                stmt.setBoolean(10, vip.isCoBanCongViewBien());
+                stmt.setBigDecimal(11, vip.getPhiDichVuVip());
             } else if (phong instanceof PhongThuong) {
                 PhongThuong thuong = (PhongThuong) phong;
-                stmt.setBoolean(7, thuong.isCoCuaSo());
-                stmt.setBoolean(8, false);
-                stmt.setBigDecimal(9, BigDecimal.ZERO);
+                stmt.setBoolean(9, thuong.isCoCuaSo());
+                stmt.setBoolean(10, false);
+                stmt.setBigDecimal(11, BigDecimal.ZERO);
             }
 
             return stmt.executeUpdate() > 0;
@@ -171,28 +187,32 @@ public class PhongDAOImpl implements PhongDAO {
 
     @Override
     public boolean update(Phong phong) {
-        String sql = "UPDATE phong SET so_phong = ?, tang = ?, don_gia_ngay = ?, trang_thai_hien_tai = ?, " +
+        String sql = "UPDATE phong SET so_phong = ?, tang = ?, loai_phong = ?, loai_giuong = ?, suc_chua_toi_da = ?, " +
+                "don_gia_ngay = ?, trang_thai_hien_tai = ?, " +
                 "co_cua_so = ?, co_ban_cong_view_bien = ?, phi_dich_vu_vip = ?, dang_kinh_doanh = ? " +
                 "WHERE ma_phong = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, phong.getSoPhong());
             stmt.setInt(2, phong.getTang());
-            stmt.setBigDecimal(3, phong.getDonGiaNgay());
-            stmt.setString(4, phong.getTrangThaiHienTai().name());
-            stmt.setBoolean(8, phong.isDangKinhDoanh());
-            stmt.setString(9, phong.getMaPhong());
+            stmt.setString(3, phong.getLoaiPhong());
+            stmt.setString(4, phong.getLoaiGiuong() != null ? phong.getLoaiGiuong().name() : "DON");
+            stmt.setInt(5, phong.getSucChuaToiDa());
+            stmt.setBigDecimal(6, phong.getDonGiaNgay());
+            stmt.setString(7, phong.getTrangThaiHienTai().name());
+            stmt.setBoolean(11, phong.isDangKinhDoanh());
+            stmt.setString(12, phong.getMaPhong());
 
             if (phong instanceof PhongVIP) {
                 PhongVIP vip = (PhongVIP) phong;
-                stmt.setBoolean(5, true);
-                stmt.setBoolean(6, vip.isCoBanCongViewBien());
-                stmt.setBigDecimal(7, vip.getPhiDichVuVip());
+                stmt.setBoolean(8, true);
+                stmt.setBoolean(9, vip.isCoBanCongViewBien());
+                stmt.setBigDecimal(10, vip.getPhiDichVuVip());
             } else if (phong instanceof PhongThuong) {
                 PhongThuong thuong = (PhongThuong) phong;
-                stmt.setBoolean(5, thuong.isCoCuaSo());
-                stmt.setBoolean(6, false);
-                stmt.setBigDecimal(7, BigDecimal.ZERO);
+                stmt.setBoolean(8, thuong.isCoCuaSo());
+                stmt.setBoolean(9, false);
+                stmt.setBigDecimal(10, BigDecimal.ZERO);
             }
 
             return stmt.executeUpdate() > 0;
@@ -203,15 +223,50 @@ public class PhongDAOImpl implements PhongDAO {
 
     @Override
     public boolean updateTrangThai(String maPhong, TrangThaiPhong trangThaiMoi) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return updateTrangThai(conn, maPhong, trangThaiMoi);
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi khi cập nhật trạng thái phòng: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean updateTrangThai(Connection conn, String maPhong, TrangThaiPhong trangThaiMoi) {
         String sql = "UPDATE phong SET trang_thai_hien_tai = ? WHERE ma_phong = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, trangThaiMoi.name());
             stmt.setString(2, maPhong);
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new DataAccessException("Lỗi khi cập nhật trạng thái phòng: " + e.getMessage(), e);
+            throw new DataAccessException("Lỗi khi cập nhật trạng thái phòng trong transaction: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public boolean updateTrangThaiCheckIn(Connection conn, String maPhong) {
+        String sql = "UPDATE phong SET trang_thai_hien_tai = 'OCCUPIED' WHERE ma_phong = ? AND trang_thai_hien_tai IN ('AVAILABLE', 'RESERVED')";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, maPhong);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi khi cập nhật trạng thái phòng khi Check-in: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Optional<Phong> findByIdForUpdate(Connection conn, String maPhong) {
+        String sql = "SELECT * FROM phong WHERE ma_phong = ? FOR UPDATE";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, maPhong);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToPhong(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi khi khóa dòng dữ liệu phòng (FOR UPDATE): " + e.getMessage(), e);
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -231,5 +286,11 @@ public class PhongDAOImpl implements PhongDAO {
     public boolean delete(String maPhong) {
         // Soft delete: chuyển dang_kinh_doanh = false
         return updateKinhDoanh(maPhong, false);
+    }
+
+    @Override
+    @Deprecated
+    public void dongBoTrangThaiTheoDon() {
+        // No-op: Đã bị vô hiệu hóa để ngăn chặn Deadlock và Table-level lock khi truy vấn danh sách phòng.
     }
 }

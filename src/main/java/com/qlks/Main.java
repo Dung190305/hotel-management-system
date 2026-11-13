@@ -34,7 +34,15 @@ public class Main {
             LOGGER.warning("Không thể kết nối đến MySQL. Vui lòng kiểm tra dịch vụ MySQL80 và database.properties!");
         }
 
-        // 3. Khởi chạy màn hình đăng nhập LoginFrame trên Event Dispatch Thread (EDT)
+        // 3. Khởi động máy chủ QR Room Order phục vụ khách đặt dịch vụ tại phòng
+        Thread serverThread = new Thread(() -> {
+            com.qlks.server.RoomOrderHttpServer.startServer(com.qlks.server.RoomOrderHttpServer.DEFAULT_PORT);
+        }, "RoomOrderServer-Thread");
+        serverThread.setDaemon(true);
+        serverThread.start();
+        Runtime.getRuntime().addShutdownHook(new Thread(com.qlks.server.RoomOrderHttpServer::stopServer));
+
+        // 4. Khởi chạy màn hình đăng nhập LoginFrame trên Event Dispatch Thread (EDT)
         SwingUtilities.invokeLater(() -> {
             LoginFrame loginFrame = new LoginFrame();
             loginFrame.setVisible(true);

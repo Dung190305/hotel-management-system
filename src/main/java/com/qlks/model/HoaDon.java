@@ -42,6 +42,10 @@ public class HoaDon implements Serializable {
     @PositiveOrZero(message = "Tiền giảm giá không được âm")
     private BigDecimal tienGiamGia;
 
+    @NotNull(message = "Tiền cọc không được để trống")
+    @PositiveOrZero(message = "Tiền cọc không được âm")
+    private BigDecimal tienCoc;
+
     @NotNull(message = "Tổng tiền không được để trống")
     @PositiveOrZero(message = "Tổng tiền không được âm")
     private BigDecimal tongTien;
@@ -56,6 +60,7 @@ public class HoaDon implements Serializable {
         this.tienPhong = BigDecimal.ZERO;
         this.tienDichVu = BigDecimal.ZERO;
         this.tienGiamGia = BigDecimal.ZERO;
+        this.tienCoc = BigDecimal.ZERO;
         this.tongTien = BigDecimal.ZERO;
         this.trangThai = TrangThaiThanhToan.CHUA_THANH_TOAN;
         this.danhSachDichVu = new ArrayList<>();
@@ -64,6 +69,13 @@ public class HoaDon implements Serializable {
     public HoaDon(String maHoaDon, DatPhong datPhong, NhanVien nhanVienLap, LocalDateTime ngayLap,
                   BigDecimal tienPhong, BigDecimal tienDichVu, BigDecimal tienGiamGia,
                   BigDecimal tongTien, TrangThaiThanhToan trangThai) {
+        this(maHoaDon, datPhong, nhanVienLap, ngayLap, tienPhong, tienDichVu, tienGiamGia,
+                datPhong != null ? datPhong.getTienCoc() : BigDecimal.ZERO, tongTien, trangThai);
+    }
+
+    public HoaDon(String maHoaDon, DatPhong datPhong, NhanVien nhanVienLap, LocalDateTime ngayLap,
+                  BigDecimal tienPhong, BigDecimal tienDichVu, BigDecimal tienGiamGia, BigDecimal tienCoc,
+                  BigDecimal tongTien, TrangThaiThanhToan trangThai) {
         this.maHoaDon = maHoaDon;
         this.datPhong = datPhong;
         this.nhanVienLap = nhanVienLap;
@@ -71,18 +83,37 @@ public class HoaDon implements Serializable {
         this.tienPhong = tienPhong != null ? tienPhong : BigDecimal.ZERO;
         this.tienDichVu = tienDichVu != null ? tienDichVu : BigDecimal.ZERO;
         this.tienGiamGia = tienGiamGia != null ? tienGiamGia : BigDecimal.ZERO;
+        this.tienCoc = tienCoc != null ? tienCoc : BigDecimal.ZERO;
         this.tongTien = tongTien != null ? tongTien : BigDecimal.ZERO;
         this.trangThai = trangThai != null ? trangThai : TrangThaiThanhToan.CHUA_THANH_TOAN;
         this.danhSachDichVu = new ArrayList<>();
     }
 
     /**
-     * Tính toán lại tổng tiền hóa đơn từ dữ liệu nghiệp vụ:
-     * Tổng tiền = Tiền phòng + Tiền dịch vụ - Tiền giảm giá.
+     * Tính toán tổng chi phí lưu trú thực tế:
+     * Tổng chi phí = Tiền phòng + Tiền dịch vụ - Giảm giá.
      */
-    public BigDecimal tinhTongTien() {
+    public BigDecimal getTongChiPhi() {
         BigDecimal tong = tienPhong.add(tienDichVu).subtract(tienGiamGia);
         return tong.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : tong;
+    }
+
+    /**
+     * Tính số tiền thực tế khách CÒN LẠI PHẢI THANH TOÁN (sau khi đã trừ tiền cọc):
+     * Còn lại phải thu = max(0, Tổng chi phí - Tiền cọc đã nhận).
+     */
+    public BigDecimal getConLaiPhaiThu() {
+        BigDecimal tongChiPhi = getTongChiPhi();
+        BigDecimal conLai = tongChiPhi.subtract(tienCoc);
+        return conLai.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : conLai;
+    }
+
+    /**
+     * Tính toán lại tổng tiền hóa đơn:
+     * Quy ước tổng tiền tương ứng với tổng chi phí dịch vụ và phòng.
+     */
+    public BigDecimal tinhTongTien() {
+        return getTongChiPhi();
     }
 
     /**
@@ -153,6 +184,14 @@ public class HoaDon implements Serializable {
     public void setTienGiamGia(BigDecimal tienGiamGia) {
         this.tienGiamGia = tienGiamGia;
         this.tongTien = tinhTongTien();
+    }
+
+    public BigDecimal getTienCoc() {
+        return tienCoc;
+    }
+
+    public void setTienCoc(BigDecimal tienCoc) {
+        this.tienCoc = tienCoc != null ? tienCoc : BigDecimal.ZERO;
     }
 
     public BigDecimal getTongTien() {

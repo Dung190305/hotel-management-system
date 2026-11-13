@@ -18,8 +18,8 @@ public class ChiTietDichVu implements Serializable {
 
     private Long id;
 
-    @NotBlank(message = "Mã hóa đơn không được để trống")
-    private String maHoaDon;
+    @NotBlank(message = "Mã đặt phòng không được để trống")
+    private String maDatPhong;
 
     @NotNull(message = "Dịch vụ không được để trống")
     private DichVu dichVu;
@@ -39,10 +39,10 @@ public class ChiTietDichVu implements Serializable {
         this.thoiGianSuDung = LocalDateTime.now();
     }
 
-    public ChiTietDichVu(Long id, String maHoaDon, DichVu dichVu, int soLuong,
+    public ChiTietDichVu(Long id, String maDatPhong, DichVu dichVu, int soLuong,
                          BigDecimal donGiaLucDung, LocalDateTime thoiGianSuDung) {
         this.id = id;
-        this.maHoaDon = maHoaDon;
+        this.maDatPhong = maDatPhong;
         this.dichVu = dichVu;
         this.soLuong = soLuong;
         this.donGiaLucDung = donGiaLucDung != null ? donGiaLucDung : (dichVu != null ? dichVu.getDonGiaHienTai() : BigDecimal.ZERO);
@@ -65,16 +65,31 @@ public class ChiTietDichVu implements Serializable {
         this.id = id;
     }
 
+    public String getMaDatPhong() {
+        return maDatPhong;
+    }
+
+    public void setMaDatPhong(String maDatPhong) {
+        this.maDatPhong = maDatPhong;
+    }
+
+    /**
+     * Tương thích ngược: Mã hóa đơn liên kết theo mã đặt phòng
+     */
     public String getMaHoaDon() {
-        return maHoaDon;
+        return maDatPhong;
     }
 
     public void setMaHoaDon(String maHoaDon) {
-        this.maHoaDon = maHoaDon;
+        this.maDatPhong = maHoaDon;
     }
 
     public DichVu getDichVu() {
         return dichVu;
+    }
+
+    public String getMaDichVu() {
+        return dichVu != null ? dichVu.getMaDichVu() : null;
     }
 
     public void setDichVu(DichVu dichVu) {

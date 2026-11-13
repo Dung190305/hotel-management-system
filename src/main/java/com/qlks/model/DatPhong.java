@@ -10,7 +10,11 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Lớp đại diện cho Đơn đặt phòng (Booking).
@@ -52,11 +56,17 @@ public class DatPhong implements Serializable {
 
     private LocalDateTime ngayTao;
 
+    private String maNvCheckIn;
+    private String maNvCheckOut;
+
+    private List<KhachLuuTru> danhSachKhach = new ArrayList<>();
+
     public DatPhong() {
         this.soLuongKhach = 1;
         this.trangThai = TrangThaiDatPhong.DA_XAC_NHAN;
         this.tienCoc = BigDecimal.ZERO;
         this.ngayTao = LocalDateTime.now();
+        this.danhSachKhach = new ArrayList<>();
     }
 
     public DatPhong(String maDatPhong, KhachHang khachHang, Phong phong, NhanVien nhanVienLap,
@@ -187,12 +197,77 @@ public class DatPhong implements Serializable {
         this.tienCoc = tienCoc;
     }
 
+    public List<KhachLuuTru> getDanhSachKhach() {
+        return danhSachKhach;
+    }
+
+    public void setDanhSachKhach(List<KhachLuuTru> danhSachKhach) {
+        this.danhSachKhach = danhSachKhach != null ? danhSachKhach : new ArrayList<>();
+    }
+
+    public void addKhachLuuTru(KhachLuuTru khach) {
+        if (khach != null) {
+            if (this.danhSachKhach == null) {
+                this.danhSachKhach = new ArrayList<>();
+            }
+            this.danhSachKhach.add(khach);
+        }
+    }
+
+    /**
+     * Kiểm tra tính hợp lệ của danh sách khách lưu trú:
+     * 1. Số lượng khách không được rỗng và không vượt quá sức chứa tối đa của phòng.
+     * 2. Mỗi khách lưu trú bắt buộc phải có thông tin họ tên và số CCCD 12 chữ số hợp lệ.
+     * 3. Không cho phép trùng số CCCD giữa các khách trong cùng một đơn đặt phòng.
+     */
+    public boolean kiemTraHopLeKhachLuuTru() {
+        if (danhSachKhach == null || danhSachKhach.isEmpty()) {
+            return false;
+        }
+        int sucChuaToiDa = (phong != null) ? phong.getSucChuaToiDa() : 4;
+        if (danhSachKhach.size() > sucChuaToiDa) {
+            return false;
+        }
+
+        Set<String> setCCCD = new HashSet<>();
+        for (KhachLuuTru k : danhSachKhach) {
+            if (k.getHoTen() == null || k.getHoTen().trim().isEmpty()) {
+                return false;
+            }
+            if (!KhachLuuTru.kiemTraCCCD(k.getSoCCCD())) {
+                return false;
+            }
+            String cccdSach = k.getSoCCCD().trim();
+            if (setCCCD.contains(cccdSach)) {
+                return false; // Trùng CCCD trong cùng đơn
+            }
+            setCCCD.add(cccdSach);
+        }
+        return true;
+    }
+
     public LocalDateTime getNgayTao() {
         return ngayTao;
     }
 
     public void setNgayTao(LocalDateTime ngayTao) {
         this.ngayTao = ngayTao;
+    }
+
+    public String getMaNvCheckIn() {
+        return maNvCheckIn;
+    }
+
+    public void setMaNvCheckIn(String maNvCheckIn) {
+        this.maNvCheckIn = maNvCheckIn;
+    }
+
+    public String getMaNvCheckOut() {
+        return maNvCheckOut;
+    }
+
+    public void setMaNvCheckOut(String maNvCheckOut) {
+        this.maNvCheckOut = maNvCheckOut;
     }
 
     @Override

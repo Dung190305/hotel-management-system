@@ -1,8 +1,9 @@
 package com.qlks.view.panels;
 
 import com.qlks.model.DichVu;
-import com.qlks.service.DichVuService;
+import com.qlks.controller.DichVuController;
 import com.qlks.util.FormatUtil;
+import com.qlks.util.IdGenerator;
 import com.qlks.util.UIUtil;
 
 import javax.swing.*;
@@ -12,17 +13,19 @@ import java.awt.*;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.qlks.view.RefreshablePanel;
+
 /**
  * Màn hình Quản lý Danh mục Dịch vụ khách sạn.
  */
-public class DichVuPanel extends JPanel {
+public class DichVuPanel extends JPanel implements RefreshablePanel {
 
-    private final DichVuService dichVuService;
+    private final DichVuController dichVuController;
     private JTable tblDichVu;
     private DefaultTableModel modelDichVu;
 
     public DichVuPanel() {
-        this.dichVuService = new DichVuService();
+        this.dichVuController = new DichVuController();
         initComponents();
         loadDuLieu();
     }
@@ -93,7 +96,7 @@ public class DichVuPanel extends JPanel {
     }
 
     public void loadDuLieu() {
-        List<DichVu> list = dichVuService.layTatCaDichVu();
+        List<DichVu> list = dichVuController.layTatCaDichVu();
         modelDichVu.setRowCount(0);
         for (DichVu dv : list) {
             modelDichVu.addRow(new Object[]{
@@ -106,7 +109,7 @@ public class DichVuPanel extends JPanel {
     }
 
     private void hienThiDialogThemDichVu() {
-        JTextField txtMa = new JTextField("DV" + System.currentTimeMillis() % 10000);
+        JTextField txtMa = new JTextField(IdGenerator.next("DV"));
         JTextField txtTen = new JTextField();
         JTextField txtGia = new JTextField("25000");
 
@@ -127,7 +130,7 @@ public class DichVuPanel extends JPanel {
                         FormatUtil.parseTien(txtGia.getText()),
                         true
                 );
-                dichVuService.themDichVu(dv);
+                dichVuController.themDichVu(dv);
                 UIUtil.showSuccess(this, "Thêm dịch vụ thành công!");
                 loadDuLieu();
             } catch (Exception ex) {
@@ -144,7 +147,7 @@ public class DichVuPanel extends JPanel {
         }
 
         String maDv = (String) modelDichVu.getValueAt(row, 0);
-        DichVu dv = dichVuService.timTheoMa(maDv).orElse(null);
+        DichVu dv = dichVuController.timTheoMa(maDv).orElse(null);
         if (dv == null) return;
 
         JTextField txtTen = new JTextField(dv.getTenDichVu());
@@ -165,7 +168,7 @@ public class DichVuPanel extends JPanel {
                 dv.setTenDichVu(txtTen.getText().trim());
                 dv.setDonGiaHienTai(FormatUtil.parseTien(txtGia.getText()));
                 dv.setDangKinhDoanh(chkKinhDoanh.isSelected());
-                dichVuService.capNhatDichVu(dv);
+                dichVuController.capNhatDichVu(dv);
                 UIUtil.showSuccess(this, "Cập nhật dịch vụ thành công!");
                 loadDuLieu();
             } catch (Exception ex) {
@@ -183,7 +186,7 @@ public class DichVuPanel extends JPanel {
         String maDv = (String) modelDichVu.getValueAt(row, 0);
         if (UIUtil.showConfirm(this, "Bạn có chắc chắn muốn ngừng kinh doanh dịch vụ này không?")) {
             try {
-                dichVuService.ngungKinhDoanh(maDv);
+                dichVuController.ngungKinhDoanh(maDv);
                 UIUtil.showSuccess(this, "Đã chuyển trạng thái dịch vụ sang Tạm ngừng.");
                 loadDuLieu();
             } catch (Exception ex) {

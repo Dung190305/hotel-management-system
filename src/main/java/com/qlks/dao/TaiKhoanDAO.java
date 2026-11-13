@@ -34,4 +34,11 @@ public interface TaiKhoanDAO extends BaseDAO<TaiKhoan, String> {
      * @return true nếu thành công
      */
     boolean updateTrangThai(String tenDangNhap, boolean trangThai);
+
+    /**
+     * Thêm mới tài khoản trong một Transaction hiện hành.
+     */
+    default boolean save(java.sql.Connection conn, TaiKhoan taiKhoan) {
+        return save(taiKhoan);
+    }
 }

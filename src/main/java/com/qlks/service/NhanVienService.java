@@ -7,11 +7,15 @@ import com.qlks.dao.impl.TaiKhoanDAOImpl;
 import com.qlks.exception.BusinessException;
 import com.qlks.model.NhanVien;
 import com.qlks.model.TaiKhoan;
+import com.qlks.model.enums.Permission;
 import com.qlks.model.enums.VaiTro;
+import com.qlks.util.DatabaseConnection;
 import com.qlks.util.ValidationUtil;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,34 +52,76 @@ public class NhanVienService {
         return nhanVienDAO.search(keyword);
     }
 
+    protected Connection layKetNoi() throws SQLException {
+        return DatabaseConnection.getConnection();
+    }
+
     /**
-     * Thêm mới một nhân viên kèm tài khoản đăng nhập hệ thống.
+     * Thêm mới một nhân viên kèm tài khoản đăng nhập hệ thống trong một Transaction nguyên tử (ACID).
+     * Chống lỗi Orphan Record: Nếu thêm nhân viên thất bại (trùng SĐT, Email), tài khoản tạo kèm sẽ được rollback.
      */
     public void themNhanVien(NhanVien nv, String tenDangNhap, String matKhau, VaiTro vaiTro) {
+        AuthorizationService.require(Permission.QUAN_LY_TAI_KHOAN);
         ValidationUtil.validate(nv);
 
         if (nhanVienDAO.findById(nv.getMaNhanVien()).isPresent()) {
             throw new BusinessException("Mã nhân viên '" + nv.getMaNhanVien() + "' đã tồn tại.");
         }
 
-        // Tạo tài khoản trước
-        if (tenDangNhap != null && !tenDangNhap.trim().isEmpty()) {
-            if (taiKhoanDAO.findByTenDangNhap(tenDangNhap).isPresent()) {
-                throw new BusinessException("Tên đăng nhập '" + tenDangNhap + "' đã tồn tại.");
+        boolean coTaiKhoan = tenDangNhap != null && !tenDangNhap.trim().isEmpty();
+        TaiKhoan tk = null;
+        if (coTaiKhoan) {
+            String cleanUser = tenDangNhap.trim();
+            if (taiKhoanDAO.findByTenDangNhap(cleanUser).isPresent()) {
+                throw new BusinessException("Tên đăng nhập '" + cleanUser + "' đã tồn tại.");
             }
             String matKhauHash = BCrypt.hashpw(matKhau != null ? matKhau : "123456", BCrypt.gensalt(10));
-            TaiKhoan tk = new TaiKhoan(tenDangNhap, matKhauHash, vaiTro != null ? vaiTro : VaiTro.LE_TAN, true);
-            taiKhoanDAO.save(tk);
-            nv.setTenDangNhap(tenDangNhap);
+            tk = new TaiKhoan(cleanUser, matKhauHash, vaiTro != null ? vaiTro : VaiTro.LE_TAN, true);
+            nv.setTenDangNhap(cleanUser);
         }
 
-        boolean success = nhanVienDAO.save(nv);
-        if (!success) {
-            throw new BusinessException("Thêm nhân viên thất bại.");
+        try (Connection conn = layKetNoi()) {
+            conn.setAutoCommit(false);
+            try {
+                if (coTaiKhoan && tk != null) {
+                    taiKhoanDAO.save(conn, tk);
+                }
+
+                boolean success = nhanVienDAO.save(conn, nv);
+                if (!success) {
+                    throw new BusinessException("Thêm nhân viên thất bại.");
+                }
+
+                conn.commit();
+            } catch (Exception e) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackEx) {
+                    // Bỏ qua lỗi rollback nếu connection đã bị hủy
+                }
+                if (e instanceof BusinessException) {
+                    throw (BusinessException) e;
+                }
+                String msg = e.getMessage();
+                if (msg != null && (msg.toLowerCase().contains("duplicate") || msg.toLowerCase().contains("trùng"))) {
+                    if (msg.toLowerCase().contains("so_dien_thoai") || msg.toLowerCase().contains("sđt")) {
+                        throw new BusinessException("Số điện thoại '" + nv.getSoDienThoai() + "' đã được sử dụng bởi nhân viên khác.");
+                    } else if (msg.toLowerCase().contains("email")) {
+                        throw new BusinessException("Email '" + nv.getEmail() + "' đã được sử dụng bởi nhân viên khác.");
+                    } else if (msg.toLowerCase().contains("ten_dang_nhap")) {
+                        throw new BusinessException("Tên đăng nhập '" + nv.getTenDangNhap() + "' đã tồn tại.");
+                    }
+                    throw new BusinessException("Thông tin nhân viên bị trùng lặp (Số điện thoại hoặc Email đã tồn tại).");
+                }
+                throw new BusinessException("Lỗi khi thêm nhân viên: " + e.getMessage(), e);
+            }
+        } catch (SQLException e) {
+            throw new BusinessException("Lỗi kết nối cơ sở dữ liệu khi thêm nhân viên: " + e.getMessage(), e);
         }
     }
 
     public void capNhatNhanVien(NhanVien nv) {
+        AuthorizationService.require(Permission.QUAN_LY_TAI_KHOAN);
         ValidationUtil.validate(nv);
         Optional<NhanVien> old = nhanVienDAO.findById(nv.getMaNhanVien());
         if (old.isEmpty()) {
@@ -89,6 +135,7 @@ public class NhanVienService {
     }
 
     public void ngungHoatDong(String maNv) {
+        AuthorizationService.require(Permission.QUAN_LY_TAI_KHOAN);
         Optional<NhanVien> old = nhanVienDAO.findById(maNv);
         if (old.isEmpty()) {
             throw new BusinessException("Không tìm thấy nhân viên.");

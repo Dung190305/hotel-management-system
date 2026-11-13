@@ -37,7 +37,37 @@ public interface PhongDAO extends BaseDAO<Phong, String> {
     List<Phong> findPhongTrong(LocalDateTime checkIn, LocalDateTime checkOut);
 
     /**
+     * Cập nhật trạng thái vật lý của phòng trong một Transaction hiện hành.
+     */
+    boolean updateTrangThai(java.sql.Connection conn, String maPhong, TrangThaiPhong trangThaiMoi);
+
+    /**
+     * Khóa dòng dữ liệu phòng bằng SELECT ... FOR UPDATE để chống đặt phòng đồng thời (concurrency control).
+     */
+    default Optional<Phong> findByIdForUpdate(java.sql.Connection conn, String maPhong) {
+        return findById(maPhong);
+    }
+
+    /**
      * Cập nhật trạng thái kinh doanh của phòng (Bật/tắt kinh doanh).
      */
-    boolean updateKinhDoanh(String maPhong, boolean dangKinhDoanh);
+    default boolean updateKinhDoanh(String maPhong, boolean dangKinhDoanh) {
+        return true;
+    }
+
+    /**
+     * Cập nhật trạng thái phòng sang OCCUPIED khi làm thủ tục Check-in.
+     * Áp dụng Atomic CAS: Chỉ thành công nếu phòng đang ở AVAILABLE hoặc RESERVED.
+     */
+    default boolean updateTrangThaiCheckIn(java.sql.Connection conn, String maPhong) {
+        return updateTrangThai(conn, maPhong, TrangThaiPhong.OCCUPIED);
+    }
+
+    /**
+     * @deprecated Không khuyến khích sử dụng vì thực hiện UPDATE JOIN toàn bảng gây khóa bản ghi và Deadlock
+     * trong các tác vụ đọc. Trạng thái phòng được quản lý trực tiếp qua các service nghiệp vụ (Check-in, Check-out, Đặt phòng).
+     */
+    @Deprecated
+    default void dongBoTrangThaiTheoDon() {
+    }
 }

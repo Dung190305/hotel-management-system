@@ -21,7 +21,21 @@ public interface ThanhToanDAO {
     boolean save(ThanhToan thanhToan);
 
     /**
+     * Lưu giao dịch thanh toán mới trong transaction dùng chung Connection.
+     */
+    default boolean save(java.sql.Connection conn, ThanhToan thanhToan) {
+        return save(thanhToan);
+    }
+
+    /**
      * Tính tổng số tiền khách đã thanh toán cho hóa đơn đó.
      */
     BigDecimal tinhTongTienDaThanhToan(String maHoaDon);
+
+    /**
+     * Tính tổng số tiền khách đã thanh toán cho hóa đơn trong transaction dùng chung Connection.
+     */
+    default BigDecimal tinhTongTienDaThanhToan(java.sql.Connection conn, String maHoaDon) {
+        return tinhTongTienDaThanhToan(maHoaDon);
+    }
 }

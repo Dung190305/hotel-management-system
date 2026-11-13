@@ -4,7 +4,8 @@ package com.qlks.model.enums;
  * Enum biểu diễn vai trò của người dùng trong hệ thống quản lý khách sạn.
  */
 public enum VaiTro {
-    ADMIN("Quản trị viên / Quản lý"),
+    ADMIN("Quản trị viên"),
+    MANAGER("Quản lý"),
     LE_TAN("Nhân viên Lễ tân");
 
     private final String tenHienThi;

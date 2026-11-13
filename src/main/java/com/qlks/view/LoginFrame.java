@@ -1,7 +1,7 @@
 package com.qlks.view;
 
+import com.qlks.controller.AuthController;
 import com.qlks.model.TaiKhoan;
-import com.qlks.service.AuthService;
 import com.qlks.util.UIUtil;
 
 import javax.swing.*;
@@ -14,14 +14,14 @@ import java.awt.event.KeyEvent;
  */
 public class LoginFrame extends JFrame {
 
-    private final AuthService authService;
+    private final AuthController authController;
     private JTextField txtTenDangNhap;
     private JPasswordField txtMatKhau;
     private JCheckBox chkHienThiMatKhau;
     private JButton btnDangNhap;
 
     public LoginFrame() {
-        this.authService = new AuthService();
+        this.authController = new AuthController();
         initComponents();
     }
 
@@ -131,10 +131,10 @@ public class LoginFrame extends JFrame {
         String password = new String(txtMatKhau.getPassword());
 
         try {
-            TaiKhoan tk = authService.dangNhap(username, password);
+            TaiKhoan tk = authController.dangNhap(username, password);
             // Mở MainFrame và truyền AuthService
             SwingUtilities.invokeLater(() -> {
-                MainFrame mainFrame = new MainFrame(authService, tk);
+                MainFrame mainFrame = new MainFrame(authController, tk);
                 mainFrame.setVisible(true);
             });
             this.dispose(); // Đóng LoginFrame

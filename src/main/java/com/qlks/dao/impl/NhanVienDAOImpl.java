@@ -118,11 +118,19 @@ public class NhanVienDAOImpl implements NhanVienDAO {
 
     @Override
     public boolean save(NhanVien nv) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return save(conn, nv);
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi khi thêm nhân viên: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean save(Connection conn, NhanVien nv) {
         String sql = "INSERT INTO nhan_vien (ma_nhan_vien, ten_dang_nhap, ho_ten, so_dien_thoai, email, chuc_vu, " +
                 "ngay_vao_lam, luong_co_ban, so_ca_truc, thuong_ca, he_so_trach_nhiem, thuong_hieu_qua, dang_hoat_dong) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, nv.getMaNhanVien());
             stmt.setString(2, nv.getTenDangNhap());
             stmt.setString(3, nv.getHoTen());

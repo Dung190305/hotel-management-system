@@ -20,3 +20,4 @@ Desktop.ini
 
 # Sensitive database local override (nếu người dùng tạo file local)
 src/main/resources/database-local.properties
+src/main/resources/database.properties

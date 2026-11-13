@@ -65,9 +65,17 @@ public class TaiKhoanDAOImpl implements TaiKhoanDAO {
 
     @Override
     public boolean save(TaiKhoan tk) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return save(conn, tk);
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi khi tạo mới tài khoản: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean save(Connection conn, TaiKhoan tk) {
         String sql = "INSERT INTO tai_khoan (ten_dang_nhap, mat_khau_hash, vai_tro, trang_thai, ngay_tao) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, tk.getTenDangNhap());
             stmt.setString(2, tk.getMatKhauHash());
             stmt.setString(3, tk.getVaiTro().name());
