@@ -81,7 +81,7 @@ public class QRPaymentDialog extends JDialog {
 
         pnlInfo.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        JLabel lblCanhBao = new JLabel("<html><b style='color: #c92a2a;'>⚠️ Lưu ý cho Tiếp tân:</b> Hãy kiểm tra tin nhắn/app ngân hàng báo đã nhận tiền trước khi ấn xác nhận!</html>");
+        JLabel lblCanhBao = new JLabel("<html><b style='color: #c92a2a;'>Lưu ý cho Tiếp tân:</b> Hãy kiểm tra tin nhắn/app ngân hàng báo đã nhận tiền trước khi ấn xác nhận!</html>");
         lblCanhBao.setFont(UIUtil.FONT_REGULAR);
         pnlInfo.add(lblCanhBao);
 
@@ -100,7 +100,7 @@ public class QRPaymentDialog extends JDialog {
         });
         pnlFooter.add(btnHuy);
 
-        JButton btnXacNhan = UIUtil.createButton("✅ Đã nhận được tiền - Xác nhận tạo đơn", new Color(40, 167, 69), Color.WHITE);
+        JButton btnXacNhan = UIUtil.createButton("Đã nhận được tiền - Xác nhận tạo đơn", new Color(40, 167, 69), Color.WHITE);
         btnXacNhan.setFont(UIUtil.FONT_BOLD);
         btnXacNhan.addActionListener(e -> {
             daXacNhanThanhToan = true;

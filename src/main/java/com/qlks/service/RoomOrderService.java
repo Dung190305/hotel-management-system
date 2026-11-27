@@ -18,9 +18,13 @@ import com.qlks.model.enums.TrangThaiDatPhong;
 import com.qlks.model.enums.TrangThaiPhong;
 import com.qlks.util.AppEventBus;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,6 +43,8 @@ public class RoomOrderService {
     private static final Map<String, DonDichVuPhong> ORDERS_MAP = new ConcurrentHashMap<>();
     // Bộ nhớ đệm Idempotency Key (chống gửi trùng đơn khi mạng điện thoại lag)
     private static final Map<String, DonDichVuPhong> IDEMPOTENCY_CACHE = new ConcurrentHashMap<>();
+    // Bộ đếm sinh mã đơn tuần tự an toàn đa luồng chống va chạm ID
+    private static final AtomicLong ORDER_COUNTER = new AtomicLong(0);
 
     private final DatPhongDAO datPhongDAO;
     private final PhongDAO phongDAO;
@@ -86,14 +92,23 @@ public class RoomOrderService {
     public DonDichVuPhong taoYeuCauOrder(String maPhongOrSoPhong, String clientToken,
                                          List<ChiTietMon> items, String ghiChu,
                                          HinhThucThanhToanOrder hinhThuc) {
-        // 1. Kiểm tra Idempotency Token chống Double-Submit
+        // 1. Kiểm tra Idempotency Token chống Double-Submit bằng khóa nguyên tử theo token
         if (clientToken != null && !clientToken.isBlank()) {
-            DonDichVuPhong existing = IDEMPOTENCY_CACHE.get(clientToken);
-            if (existing != null) {
-                return existing;
+            synchronized (clientToken.intern()) {
+                DonDichVuPhong existing = IDEMPOTENCY_CACHE.get(clientToken);
+                if (existing != null) {
+                    return existing;
+                }
+                return thucHienTaoOrder(maPhongOrSoPhong, clientToken, items, ghiChu, hinhThuc);
             }
         }
 
+        return thucHienTaoOrder(maPhongOrSoPhong, clientToken, items, ghiChu, hinhThuc);
+    }
+
+    private DonDichVuPhong thucHienTaoOrder(String maPhongOrSoPhong, String clientToken,
+                                            List<ChiTietMon> items, String ghiChu,
+                                            HinhThucThanhToanOrder hinhThuc) {
         // 2. Kiểm tra giờ phục vụ
         if (!isInOperatingHours()) {
             throw new BusinessException(String.format(
@@ -120,18 +135,9 @@ public class RoomOrderService {
             throw new BusinessException("Phòng " + phong.getSoPhong() + " hiện không có khách lưu trú. Chỉ phòng đang có khách mới có thể gọi dịch vụ!");
         }
 
-        // 5. Tìm phiếu đặt phòng đang ở (DANG_O) của phòng này
-        List<DatPhong> dsDangO = datPhongDAO.findByTrangThai(TrangThaiDatPhong.DANG_O);
-        DatPhong dpHienTai = null;
-        for (DatPhong dp : dsDangO) {
-            if (dp.getPhong() != null && dp.getPhong().getMaPhong().equals(phong.getMaPhong())) {
-                dpHienTai = dp;
-                break;
-            }
-        }
-        if (dpHienTai == null) {
-            throw new BusinessException("Không tìm thấy phiếu lưu trú hợp lệ cho phòng " + phong.getSoPhong());
-        }
+        // 5. Tìm phiếu đặt phòng đang ở (DANG_O) của phòng này (Single-row indexed query)
+        DatPhong dpHienTai = datPhongDAO.findDangOByPhong(phong.getMaPhong())
+                .orElseThrow(() -> new BusinessException("Không tìm thấy phiếu lưu trú hợp lệ cho phòng " + phong.getSoPhong()));
 
         // 6. Kiểm tra giá và chụp ảnh đơn giá Snapshot của từng món
         List<ChiTietMon> danhSachMonValidated = new ArrayList<>();
@@ -149,8 +155,11 @@ public class RoomOrderService {
             throw new BusinessException("Vui lòng chọn ít nhất 1 món với số lượng lớn hơn 0.");
         }
 
-        // 7. Tạo đối tượng đơn hàng chờ tiếp nhận
-        String orderId = "ORD-" + System.currentTimeMillis() % 1000000;
+        // 7. Tạo đối tượng đơn hàng chờ tiếp nhận với mã định danh duy nhất tuyệt đối (Zero-collision)
+        long seq = ORDER_COUNTER.incrementAndGet() % 10000;
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss"));
+        String salt = Integer.toHexString(ThreadLocalRandom.current().nextInt(0x100, 0xFFF)).toUpperCase();
+        String orderId = String.format("ORD-%s-%04d-%s", timestamp, seq, salt);
         String tenKhach = (dpHienTai.getKhachHang() != null) ? dpHienTai.getKhachHang().getHoTen() : "Khách lưu trú";
 
         DonDichVuPhong order = new DonDichVuPhong(
@@ -193,10 +202,8 @@ public class RoomOrderService {
         }
 
         try {
-            // Ghi nhận lần lượt từng món vào CSDL thông qua DichVuService (đã có SELECT FOR UPDATE dat_phong)
-            for (ChiTietMon mon : order.getDanhSachMon()) {
-                dichVuService.ghiNhanDichVu(order.getMaDatPhong(), mon.getMaDichVu(), mon.getSoLuong());
-            }
+            // Ghi nhận toàn bộ danh sách món trong 1 Transaction nguyên tử duy nhất (Batch Processing)
+            dichVuService.ghiNhanDanhSachDichVu(order.getMaDatPhong(), order.getDanhSachMon());
 
             order.setTrangThai(TrangThaiOrder.DA_TIEP_NHAN);
             order.setNguoiDuyet(maNhanVienDuyet);

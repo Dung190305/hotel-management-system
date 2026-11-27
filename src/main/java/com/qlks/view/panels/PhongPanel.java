@@ -54,61 +54,80 @@ public class PhongPanel extends JPanel implements RefreshablePanel, AppEventBus.
         setBackground(UIUtil.COLOR_BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // 1. THANH TIÊU ĐỀ & CÔNG CỤ LỌC (Bố cục chống tràn chữ)
-        JPanel pnlTop = new JPanel(new BorderLayout(10, 10));
+        // 1. THANH TIÊU ĐỀ & CÔNG CỤ LỌC (Bố cục 2 dòng chống tràn và không bị đè chữ)
+        JPanel pnlTop = new JPanel(new BorderLayout(0, 10));
         pnlTop.setBackground(Color.WHITE);
         pnlTop.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 233, 238)),
-                BorderFactory.createEmptyBorder(12, 15, 12, 15)
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)
         ));
 
-        JLabel lblTitle = new JLabel("SƠ ĐỒ & QUẢN LÝ PHÒNG");
+        // Dòng 1: Tiêu đề "SƠ ĐỒ PHÒNG" bên trái, các nút thao tác bên phải
+        JPanel pnlRow1 = new JPanel(new BorderLayout(15, 0));
+        pnlRow1.setBackground(Color.WHITE);
+
+        JLabel lblTitle = new JLabel("SƠ ĐỒ PHÒNG");
         lblTitle.setFont(UIUtil.FONT_TITLE);
         lblTitle.setForeground(UIUtil.COLOR_PRIMARY);
-        pnlTop.add(lblTitle, BorderLayout.WEST);
+        pnlRow1.add(lblTitle, BorderLayout.WEST);
 
-        // Thanh công cụ lọc và nút thao tác
-        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        pnlActions.setBackground(Color.WHITE);
+        // Nút thao tác
+        JPanel pnlButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        pnlButtons.setBackground(Color.WHITE);
 
-        pnlActions.add(new JLabel("Cấu hình:"));
+        JButton btnThemPhong = UIUtil.createButton("+ Thêm phòng", UIUtil.COLOR_PRIMARY, Color.WHITE);
+        btnThemPhong.addActionListener(e -> hienThiDialogThemPhong());
+        pnlButtons.add(btnThemPhong);
+
+        JButton btnDonPhong = UIUtil.createButton("Đơn gọi phòng (QR)", new Color(23, 162, 184), Color.WHITE);
+        btnDonPhong.addActionListener(e -> new RoomOrderManagementDialog(SwingUtilities.getWindowAncestor(this)).setVisible(true));
+        pnlButtons.add(btnDonPhong);
+
+        JButton btnLamMoi = UIUtil.createButton("Làm mới", new Color(108, 117, 125), Color.WHITE);
+        btnLamMoi.addActionListener(e -> loadDuLieu());
+        pnlButtons.add(btnLamMoi);
+
+        pnlRow1.add(pnlButtons, BorderLayout.EAST);
+        pnlTop.add(pnlRow1, BorderLayout.NORTH);
+
+        // Dòng 2: Bộ lọc cấu hình và trạng thái phòng (tách riêng biệt, thoáng đãng, tuyệt đối không bị đè chữ)
+        JPanel pnlRow2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        pnlRow2.setBackground(Color.WHITE);
+
+        JLabel lblLocCauHinh = new JLabel("Cấu hình phòng:");
+        lblLocCauHinh.setFont(UIUtil.FONT_BOLD);
+        pnlRow2.add(lblLocCauHinh);
+
         cboLocLoaiPhong = new JComboBox<>(new String[]{
-                "-- Tất cả --",
+                "-- Tất cả cấu hình --",
                 "Phòng đơn thường",
                 "Phòng đơn VIP",
                 "Phòng đôi thường",
                 "Phòng đôi VIP"
         });
-        cboLocLoaiPhong.setPreferredSize(new Dimension(160, 32));
+        cboLocLoaiPhong.setPreferredSize(new Dimension(180, 32));
         cboLocLoaiPhong.addActionListener(e -> locDuLieu());
-        pnlActions.add(cboLocLoaiPhong);
+        pnlRow2.add(cboLocLoaiPhong);
 
-        pnlActions.add(new JLabel("Trạng thái:"));
+        pnlRow2.add(Box.createHorizontalStrut(15));
+
+        JLabel lblLocTrangThai = new JLabel("Trạng thái:");
+        lblLocTrangThai.setFont(UIUtil.FONT_BOLD);
+        pnlRow2.add(lblLocTrangThai);
+
         cboLocTrangThai = new JComboBox<>(new String[]{
-                "-- Tất cả --",
+                "-- Tất cả trạng thái --",
                 "Còn trống (AVAILABLE)",
                 "Đang có khách (OCCUPIED)",
                 "Đã đặt (RESERVED)",
                 "Đang dọn dẹp (CLEANING)",
                 "Đang bảo trì (MAINTENANCE)"
         });
-        cboLocTrangThai.setPreferredSize(new Dimension(190, 32));
+        cboLocTrangThai.setPreferredSize(new Dimension(200, 32));
         cboLocTrangThai.addActionListener(e -> locDuLieu());
-        pnlActions.add(cboLocTrangThai);
+        pnlRow2.add(cboLocTrangThai);
 
-        JButton btnThemPhong = UIUtil.createButton("+ Thêm phòng", UIUtil.COLOR_PRIMARY, Color.WHITE);
-        btnThemPhong.addActionListener(e -> hienThiDialogThemPhong());
-        pnlActions.add(btnThemPhong);
-
-        JButton btnDonPhong = UIUtil.createButton("Đơn gọi phòng (QR)", new Color(23, 162, 184), Color.WHITE);
-        btnDonPhong.addActionListener(e -> new RoomOrderManagementDialog(SwingUtilities.getWindowAncestor(this)).setVisible(true));
-        pnlActions.add(btnDonPhong);
-
-        JButton btnLamMoi = UIUtil.createButton("Làm mới", new Color(108, 117, 125), Color.WHITE);
-        btnLamMoi.addActionListener(e -> loadDuLieu());
-        pnlActions.add(btnLamMoi);
-
-        pnlTop.add(pnlActions, BorderLayout.EAST);
+        pnlTop.add(pnlRow2, BorderLayout.SOUTH);
         add(pnlTop, BorderLayout.NORTH);
 
         // 2. CHÚ THÍCH MÀU SẮC TRẠNG THÁI (LEGEND)
@@ -408,7 +427,7 @@ public class PhongPanel extends JPanel implements RefreshablePanel, AppEventBus.
         JPopupMenu menu = new JPopupMenu();
 
         // 1. Tùy chọn xem tiện nghi chi tiết
-        JMenuItem itemTienNghi = new JMenuItem("🛋️ Xem tiện nghi phòng " + p.getSoPhong());
+        JMenuItem itemTienNghi = new JMenuItem("Xem tiện nghi phòng " + p.getSoPhong());
         itemTienNghi.addActionListener(e -> {
             StringBuilder sb = new StringBuilder();
             sb.append("CẤU HÌNH: ").append(p.getTenLoaiPhongHienThi().toUpperCase()).append("\n");
@@ -416,21 +435,21 @@ public class PhongPanel extends JPanel implements RefreshablePanel, AppEventBus.
             sb.append("Sức chứa tối đa: ").append(p.getSucChuaToiDa()).append(" người\n\n");
             sb.append("DANH MỤC TIỆN NGHI:\n");
             for (String tn : p.getDanhSachTienNghi()) {
-                sb.append("  ✔ ").append(tn).append("\n");
+                sb.append("  - ").append(tn).append("\n");
             }
             JOptionPane.showMessageDialog(this, sb.toString(), "Tiện nghi phòng " + p.getSoPhong(), JOptionPane.INFORMATION_MESSAGE);
         });
         menu.add(itemTienNghi);
 
         // Tùy chọn xem và in mã QR Menu phục vụ tại phòng
-        JMenuItem itemQRCode = new JMenuItem("📱 Mã QR Menu phòng " + p.getSoPhong());
+        JMenuItem itemQRCode = new JMenuItem("Mã QR Menu phòng " + p.getSoPhong());
         itemQRCode.addActionListener(e -> new InRoomQRCodeDialog(SwingUtilities.getWindowAncestor(this), p).setVisible(true));
         menu.add(itemQRCode);
         menu.addSeparator();
 
         // 2. Tùy chọn hoàn tất dọn dẹp nếu phòng đang dọn dẹp (CLEANING)
         if (p.getTrangThaiHienTai() == TrangThaiPhong.CLEANING) {
-            JMenuItem itemHoanTatDon = new JMenuItem("✨ Hoàn tất dọn dẹp phòng " + p.getSoPhong());
+            JMenuItem itemHoanTatDon = new JMenuItem("Hoàn tất dọn dẹp phòng " + p.getSoPhong());
             itemHoanTatDon.setFont(UIUtil.FONT_BOLD);
             itemHoanTatDon.addActionListener(e -> {
                 try {
@@ -449,7 +468,7 @@ public class PhongPanel extends JPanel implements RefreshablePanel, AppEventBus.
         }
 
         // 2. Tùy chọn đổi trạng thái có kiểm soát nghiệp vụ (chỉ các trạng thái buồng phòng cho phép)
-        JMenuItem itemDoiTT = new JMenuItem("⚙️ Đổi trạng thái phòng (" + p.getSoPhong() + ")...");
+        JMenuItem itemDoiTT = new JMenuItem("Đổi trạng thái phòng (" + p.getSoPhong() + ")...");
         itemDoiTT.addActionListener(e -> {
             TrangThaiPhong[] options = new TrangThaiPhong[]{
                     TrangThaiPhong.AVAILABLE,
@@ -516,11 +535,11 @@ public class PhongPanel extends JPanel implements RefreshablePanel, AppEventBus.
         JComboBox<String> cboLoaiGiuong = new JComboBox<>(new String[]{"Phòng đơn (1 giường)", "Phòng đôi (2 giường)"});
         JComboBox<String> cboHangPhong = new JComboBox<>(new String[]{"Phòng thường", "Phòng VIP"});
 
-        JLabel lblCauHinh = new JLabel("✔ Cấu hình: Phòng đơn thường");
+        JLabel lblCauHinh = new JLabel("Cấu hình: Phòng đơn thường");
         lblCauHinh.setFont(UIUtil.FONT_BOLD);
         lblCauHinh.setForeground(UIUtil.COLOR_PRIMARY);
 
-        JLabel lblQuyMo = new JLabel("🛏️ 1 giường  |  👥 Sức chứa tối đa: 2 người");
+        JLabel lblQuyMo = new JLabel("1 giường  |  Sức chứa tối đa: 2 người");
         lblQuyMo.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblQuyMo.setForeground(new Color(40, 167, 69));
 
@@ -544,8 +563,8 @@ public class PhongPanel extends JPanel implements RefreshablePanel, AppEventBus.
                     (isVip ? com.qlks.model.enums.CauHinhLoaiPhong.PHONG_DOI_VIP : com.qlks.model.enums.CauHinhLoaiPhong.PHONG_DOI_THUONG) :
                     (isVip ? com.qlks.model.enums.CauHinhLoaiPhong.PHONG_DON_VIP : com.qlks.model.enums.CauHinhLoaiPhong.PHONG_DON_THUONG);
 
-            lblCauHinh.setText("✔ Cấu hình chuẩn: " + ch.getTenHienThi());
-            lblQuyMo.setText("🛏️ " + ch.getSoGiuong() + " giường  |  👥 Sức chứa tối đa: " + ch.getSucChuaToiDa() + " người");
+            lblCauHinh.setText("Cấu hình chuẩn: " + ch.getTenHienThi());
+            lblQuyMo.setText(ch.getSoGiuong() + " giường  |  Sức chứa tối đa: " + ch.getSucChuaToiDa() + " người");
             txtTienNghi.setText("Danh mục tiện nghi tự động:\n• " + String.join("\n• ", ch.getDanhSachTienNghi()));
 
             chkCuaSo.setEnabled(!isVip);
@@ -695,11 +714,11 @@ public class PhongPanel extends JPanel implements RefreshablePanel, AppEventBus.
         JComboBox<String> cboLoaiGiuong = new JComboBox<>(new String[]{"Phòng đơn (1 giường)", "Phòng đôi (2 giường)"});
         cboLoaiGiuong.setSelectedIndex(p.getLoaiGiuong() == com.qlks.model.enums.LoaiGiuong.DOI ? 1 : 0);
 
-        JLabel lblCauHinh = new JLabel("✔ Cấu hình: " + p.getTenLoaiPhongHienThi());
+        JLabel lblCauHinh = new JLabel("Cấu hình: " + p.getTenLoaiPhongHienThi());
         lblCauHinh.setFont(UIUtil.FONT_BOLD);
         lblCauHinh.setForeground(UIUtil.COLOR_PRIMARY);
 
-        JLabel lblQuyMo = new JLabel("🛏️ " + p.getSoGiuong() + " giường  |  👥 Sức chứa tối đa: " + p.getSucChuaToiDa() + " người");
+        JLabel lblQuyMo = new JLabel(p.getSoGiuong() + " giường  |  Sức chứa tối đa: " + p.getSucChuaToiDa() + " người");
         lblQuyMo.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblQuyMo.setForeground(new Color(40, 167, 69));
 
@@ -716,8 +735,8 @@ public class PhongPanel extends JPanel implements RefreshablePanel, AppEventBus.
                     (isVip ? com.qlks.model.enums.CauHinhLoaiPhong.PHONG_DOI_VIP : com.qlks.model.enums.CauHinhLoaiPhong.PHONG_DOI_THUONG) :
                     (isVip ? com.qlks.model.enums.CauHinhLoaiPhong.PHONG_DON_VIP : com.qlks.model.enums.CauHinhLoaiPhong.PHONG_DON_THUONG);
 
-            lblCauHinh.setText("✔ Cấu hình chuẩn: " + ch.getTenHienThi());
-            lblQuyMo.setText("🛏️ " + ch.getSoGiuong() + " giường  |  👥 Sức chứa tối đa: " + ch.getSucChuaToiDa() + " người");
+            lblCauHinh.setText("Cấu hình chuẩn: " + ch.getTenHienThi());
+            lblQuyMo.setText(ch.getSoGiuong() + " giường  |  Sức chứa tối đa: " + ch.getSucChuaToiDa() + " người");
             txtTienNghi.setText("Danh mục tiện nghi tự động:\n• " + String.join("\n• ", ch.getDanhSachTienNghi()));
         };
 

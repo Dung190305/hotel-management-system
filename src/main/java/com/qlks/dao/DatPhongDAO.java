@@ -27,6 +27,22 @@ public interface DatPhongDAO extends BaseDAO<DatPhong, String> {
     List<DatPhong> findByTrangThai(TrangThaiDatPhong trangThai);
 
     /**
+     * Tìm phiếu đặt phòng hiện đang có khách lưu trú (DANG_O) tại phòng chỉ định.
+     */
+    default java.util.Optional<DatPhong> findDangOByPhong(String maPhong) {
+        return findByPhong(maPhong).stream()
+                .filter(dp -> dp.getTrangThai() == TrangThaiDatPhong.DANG_O)
+                .findFirst();
+    }
+
+    /**
+     * Tìm phiếu đặt phòng hiện đang có khách lưu trú (DANG_O) tại phòng chỉ định trong Transaction.
+     */
+    default java.util.Optional<DatPhong> findDangOByPhong(java.sql.Connection conn, String maPhong) {
+        return findDangOByPhong(maPhong);
+    }
+
+    /**
      * Cập nhật trạng thái đặt phòng.
      */
     boolean updateTrangThai(String maDatPhong, TrangThaiDatPhong trangThaiMoi);
@@ -60,6 +76,14 @@ public interface DatPhongDAO extends BaseDAO<DatPhong, String> {
      * Kiểm tra xem phòng có lượt đặt phòng nào đã xác nhận (DA_XAC_NHAN) trong ngày chỉ định hay không.
      */
     boolean hasDatPhongXacNhanTrongNgay(String maPhong, java.time.LocalDate ngay);
+
+    /**
+     * Kiểm tra xem phòng có lượt đặt phòng nào đã xác nhận (DA_XAC_NHAN) trong ngày chỉ định hay không
+     * trong một Transaction hiện hành, loại trừ mã đặt phòng đang hủy để chống Dirty Read.
+     */
+    default boolean hasDatPhongXacNhanTrongNgay(java.sql.Connection conn, String maPhong, java.time.LocalDate ngay, String excludeMaDatPhong) {
+        return hasDatPhongXacNhanTrongNgay(maPhong, ngay);
+    }
 
     /**
      * Tìm phiếu đặt phòng theo mã trong một Transaction hiện hành.

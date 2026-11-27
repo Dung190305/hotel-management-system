@@ -18,7 +18,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Màn hình Trung tâm Thông báo các đơn tới hạn (Đặt phòng / Nhận phòng / Trả phòng / Hóa đơn).
+ * Màn hình Trung tâm Thông báo các đơn tới hạn (Đặt phòng / Nhận phòng / Trả
+ * phòng / Hóa đơn).
  */
 public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventBus.AppEventListener {
 
@@ -68,8 +69,7 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
         pnlTop.setBackground(Color.WHITE);
         pnlTop.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 233, 238)),
-                BorderFactory.createEmptyBorder(12, 15, 12, 15)
-        ));
+                BorderFactory.createEmptyBorder(12, 15, 12, 15)));
 
         JLabel lblTitle = new JLabel("TRUNG TÂM THÔNG BÁO ĐƠN TỚI HẠN & QUÁ HẠN");
         lblTitle.setFont(UIUtil.FONT_TITLE);
@@ -79,7 +79,7 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
         JPanel pnlTopActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlTopActions.setOpaque(false);
 
-        JButton btnDanhDauDaDoc = UIUtil.createButton("✓ Đánh dấu tất cả đã đọc", new Color(40, 167, 69), Color.WHITE);
+        JButton btnDanhDauDaDoc = UIUtil.createButton("Đánh dấu tất cả đã đọc", new Color(40, 167, 69), Color.WHITE);
         btnDanhDauDaDoc.addActionListener(e -> {
             thongBaoService.danhDauTatCaDaDoc();
             loadDuLieu();
@@ -103,9 +103,12 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
         pnlCards.setOpaque(false);
 
         pnlCards.add(createStatCard("QUÁ HẠN XỬ LÝ", lblTongQuaHan = new JLabel("0 đơn"), new Color(220, 53, 69)));
-        pnlCards.add(createStatCard("CHECK-IN HÔM NAY", lblCheckInHomNay = new JLabel("0 đơn"), new Color(253, 126, 20)));
-        pnlCards.add(createStatCard("CHECK-OUT HÔM NAY", lblCheckOutHomNay = new JLabel("0 đơn"), new Color(255, 193, 7)));
-        pnlCards.add(createStatCard("HÓA ĐƠN CHƯA THU", lblHoaDonChuaTT = new JLabel("0 đơn"), new Color(13, 110, 253)));
+        pnlCards.add(
+                createStatCard("CHECK-IN HÔM NAY", lblCheckInHomNay = new JLabel("0 đơn"), new Color(253, 126, 20)));
+        pnlCards.add(
+                createStatCard("CHECK-OUT HÔM NAY", lblCheckOutHomNay = new JLabel("0 đơn"), new Color(255, 193, 7)));
+        pnlCards.add(
+                createStatCard("HÓA ĐƠN CHƯA THU", lblHoaDonChuaTT = new JLabel("0 đơn"), new Color(13, 110, 253)));
 
         pnlCenter.add(pnlCards, BorderLayout.NORTH);
 
@@ -114,8 +117,7 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
         pnlTableContainer.setBackground(Color.WHITE);
         pnlTableContainer.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 233, 238)),
-                BorderFactory.createEmptyBorder(12, 15, 12, 15)
-        ));
+                BorderFactory.createEmptyBorder(12, 15, 12, 15)));
 
         // Toolbar trên Table
         JPanel pnlFilterBar = new JPanel(new BorderLayout());
@@ -129,7 +131,7 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
         pnlFilterControls.setOpaque(false);
         pnlFilterControls.add(new JLabel("Bộ lọc:"));
 
-        cboBoLoc = new JComboBox<>(new String[]{
+        cboBoLoc = new JComboBox<>(new String[] {
                 "Tất cả thông báo",
                 "Quá hạn cần xử lý gấp",
                 "Tới hạn Check-in (Nhận phòng)",
@@ -144,7 +146,8 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
         pnlTableContainer.add(pnlFilterBar, BorderLayout.NORTH);
 
         // Table
-        String[] columns = {"Trạng thái", "Mức độ", "Loại thông báo", "Mã đơn", "Khách hàng", "Số điện thoại", "Phòng", "Hạn chót", "Chi tiết / Tình trạng"};
+        String[] columns = { "Trạng thái", "Mức độ", "Loại thông báo", "Mã đơn", "Khách hàng", "Số điện thoại", "Phòng",
+                "Hạn chót", "Chi tiết / Tình trạng" };
         modelThongBao = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -166,7 +169,8 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
         // Renderer cho cột Trạng thái
         tblThongBao.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 setHorizontalAlignment(SwingConstants.CENTER);
                 setFont(UIUtil.FONT_BOLD);
@@ -183,7 +187,8 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
         // Custom Cell Renderer tô màu mức độ cảnh báo
         tblThongBao.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 setHorizontalAlignment(SwingConstants.CENTER);
                 setFont(UIUtil.FONT_BOLD);
@@ -205,7 +210,7 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
         JPanel pnlBottomBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         pnlBottomBar.setOpaque(false);
 
-        JButton btnXuLy = UIUtil.createButton("👉 Điều hướng xử lý ngay", new Color(40, 167, 69), Color.WHITE);
+        JButton btnXuLy = UIUtil.createButton("Điều hướng xử lý ngay", new Color(40, 167, 69), Color.WHITE);
         btnXuLy.addActionListener(e -> xuLyDieuHuongNhanh());
         pnlBottomBar.add(btnXuLy);
 
@@ -222,9 +227,7 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
                 BorderFactory.createMatteBorder(0, 4, 0, 0, accentColor),
                 BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(new Color(230, 233, 238)),
-                        BorderFactory.createEmptyBorder(12, 15, 12, 15)
-                )
-        ));
+                        BorderFactory.createEmptyBorder(12, 15, 12, 15))));
 
         JLabel lblTitle = new JLabel(title);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -274,10 +277,12 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
                     thoaMan = (tb.getMucDo() == MucDo.NGUY_CAP);
                     break;
                 case 2: // Check-in
-                    thoaMan = (tb.getLoaiThongBao() == LoaiThongBao.CHECK_IN_HOM_NAY || tb.getLoaiThongBao() == LoaiThongBao.QUA_HAN_CHECK_IN);
+                    thoaMan = (tb.getLoaiThongBao() == LoaiThongBao.CHECK_IN_HOM_NAY
+                            || tb.getLoaiThongBao() == LoaiThongBao.QUA_HAN_CHECK_IN);
                     break;
                 case 3: // Check-out
-                    thoaMan = (tb.getLoaiThongBao() == LoaiThongBao.CHECK_OUT_HOM_NAY || tb.getLoaiThongBao() == LoaiThongBao.QUA_HAN_CHECK_OUT);
+                    thoaMan = (tb.getLoaiThongBao() == LoaiThongBao.CHECK_OUT_HOM_NAY
+                            || tb.getLoaiThongBao() == LoaiThongBao.QUA_HAN_CHECK_OUT);
                     break;
                 case 4: // Hóa đơn
                     thoaMan = (tb.getLoaiThongBao() == LoaiThongBao.HOA_DON_CHUA_THANH_TOAN);
@@ -285,8 +290,8 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
             }
 
             if (thoaMan) {
-                modelThongBao.addRow(new Object[]{
-                        tb.isDaDoc() ? "🔵 Đã đọc" : "🔴 Chưa đọc",
+                modelThongBao.addRow(new Object[] {
+                        tb.isDaDoc() ? "Đã đọc" : "Chưa đọc",
                         tb.getMucDo().getTenHienThi(),
                         tb.getLoaiThongBao().getTenHienThi(),
                         tb.getMaDon(),
@@ -318,8 +323,8 @@ public class ThongBaoPanel extends JPanel implements RefreshablePanel, AppEventB
                 tabNavigator.accept("HOA_DON");
             }
         } else {
-            UIUtil.showInfo(this, "Đơn đã chọn: " + maDon + " (" + loaiThongBaoStr + "). Vui lòng chuyển sang Tab tương ứng để thực hiện thao tác.");
+            UIUtil.showInfo(this, "Đơn đã chọn: " + maDon + " (" + loaiThongBaoStr
+                    + "). Vui lòng chuyển sang Tab tương ứng để thực hiện thao tác.");
         }
     }
 }
-

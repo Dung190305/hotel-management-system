@@ -169,6 +169,31 @@ public class DatPhongDAOImpl implements DatPhongDAO {
     }
 
     @Override
+    public Optional<DatPhong> findDangOByPhong(String maPhong) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return findDangOByPhong(conn, maPhong);
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi kết nối khi tìm khách đang ở phòng: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Optional<DatPhong> findDangOByPhong(Connection conn, String maPhong) {
+        String sql = "SELECT * FROM dat_phong WHERE ma_phong = ? AND trang_thai = 'DANG_O' LIMIT 1";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, maPhong);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToDatPhong(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi khi tìm khách đang ở phòng: " + e.getMessage(), e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
     public List<DatPhong> findAll() {
         List<DatPhong> list = new ArrayList<>();
         String sql = "SELECT * FROM dat_phong ORDER BY ngay_tao DESC";
@@ -389,16 +414,28 @@ public class DatPhongDAOImpl implements DatPhongDAO {
 
     @Override
     public boolean hasDatPhongXacNhanTrongNgay(String maPhong, java.time.LocalDate ngay) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            return hasDatPhongXacNhanTrongNgay(conn, maPhong, ngay, null);
+        } catch (SQLException e) {
+            throw new DataAccessException("Lỗi khi kiểm tra lịch đặt phòng trong ngày: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean hasDatPhongXacNhanTrongNgay(Connection conn, String maPhong, java.time.LocalDate ngay, String excludeMaDatPhong) {
         String sql = "SELECT COUNT(*) FROM dat_phong " +
                 "WHERE ma_phong = ? " +
                 "AND trang_thai = 'DA_XAC_NHAN' " +
                 "AND DATE(ngay_nhan_phong) <= ? " +
-                "AND DATE(ngay_tra_phong) >= ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                "AND DATE(ngay_tra_phong) >= ?" +
+                (excludeMaDatPhong != null ? " AND ma_dat_phong != ?" : "");
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, maPhong);
             stmt.setDate(2, java.sql.Date.valueOf(ngay));
             stmt.setDate(3, java.sql.Date.valueOf(ngay));
+            if (excludeMaDatPhong != null) {
+                stmt.setString(4, excludeMaDatPhong);
+            }
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1) > 0;

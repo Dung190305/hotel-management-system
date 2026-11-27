@@ -106,7 +106,7 @@ public class HoaDonPanel extends JPanel implements RefreshablePanel, AppEventBus
         btnXemChiTiet.addActionListener(e -> xuLyXemChiTiet());
         pnlBottom.add(btnXemChiTiet);
 
-        JButton btnInBienLai = UIUtil.createButton("📄 In / Xuất biên lai", new Color(23, 162, 184), Color.WHITE);
+        JButton btnInBienLai = UIUtil.createButton("In / Xuất biên lai", new Color(23, 162, 184), Color.WHITE);
         btnInBienLai.addActionListener(e -> xuLyInBienLai());
         pnlBottom.add(btnInBienLai);
 
@@ -179,7 +179,7 @@ public class HoaDonPanel extends JPanel implements RefreshablePanel, AppEventBus
         JPanel pnlDlg = new JPanel(new BorderLayout(5, 5));
         pnlDlg.add(scroll, BorderLayout.CENTER);
 
-        JButton btnXuatFile = UIUtil.createButton("💾 Xuất biên lai ra file (.txt)", new Color(23, 162, 184), Color.WHITE);
+        JButton btnXuatFile = UIUtil.createButton("Xuất biên lai ra file (.txt)", new Color(23, 162, 184), Color.WHITE);
         btnXuatFile.addActionListener(e -> xuLyInBienLai());
 
         JPanel pnlBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -220,9 +220,9 @@ public class HoaDonPanel extends JPanel implements RefreshablePanel, AppEventBus
     private String taoVanBanBienLai(HoaDon hd) {
         StringBuilder sb = new StringBuilder();
         sb.append("=================================================================\n");
-        sb.append("                   KHÁCH SẠN GRAND LUXURY HOTEL                   \n");
+        sb.append("                      KHÁCH SẠN LUXURY HOTEL                     \n");
         sb.append("            Địa chỉ: 123 Đường Biển, TP. Nha Trang                \n");
-        sb.append("            Hotline: 1900 6868 - Email: contact@grandluxury.com   \n");
+        sb.append("            Hotline: 1900 6868 - Email: contact@luxuryhotel.com   \n");
         sb.append("=================================================================\n");
         sb.append("                 PHIẾU THANH TOÁN (FOLIO RECEIPT)                 \n");
         sb.append("-----------------------------------------------------------------\n");
@@ -304,7 +304,7 @@ public class HoaDonPanel extends JPanel implements RefreshablePanel, AppEventBus
         BigDecimal conLaiCanThu = hoaDonController.tinhSoTienConLaiCanThu(maHd);
         BigDecimal daThanhToan = hoaDonController.tinhTongTienDaThanhToan(maHd);
 
-        JTextField txtSoTien = new JTextField(conLaiCanThu.toPlainString());
+        JTextField txtSoTien = new JTextField(conLaiCanThu.setScale(0, java.math.RoundingMode.HALF_UP).toPlainString());
         JComboBox<PhuongThucThanhToan> cboPhuongThuc = new JComboBox<>(PhuongThucThanhToan.values());
         
         String ghiChuMacDinh = "Thanh toán tiền phòng và dịch vụ";

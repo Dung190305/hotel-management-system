@@ -285,7 +285,7 @@ public class DatPhongPanel extends JPanel implements RefreshablePanel, AppEventB
 
                 if (!dTra.isAfter(dNhan)) {
                     cboPhong.removeAllItems();
-                    lblSoDemVaTien.setText("⚠️ Ngày trả phòng phải sau ngày nhận ít nhất 1 đêm!");
+                    lblSoDemVaTien.setText("Ngày trả phòng phải sau ngày nhận ít nhất 1 đêm!");
                     lblSoDemVaTien.setForeground(new Color(220, 53, 69));
                     lblSucChua.setText("Chưa chọn phòng");
                     return;
@@ -308,7 +308,7 @@ public class DatPhongPanel extends JPanel implements RefreshablePanel, AppEventB
                     String moTaNgay = HolidayUtil.getMoTaLoaiNgay(dNhan, dTra);
                     lblSoDemVaTien.setText(soDem + " đêm = " + FormatUtil.formatTien(tien) + " (" + moTaNgay + ")");
                     lblSoDemVaTien.setForeground(UIUtil.COLOR_PRIMARY);
-                    lblSucChua.setText("🛏️ " + pChon.getTenLoaiPhongHienThi() + " | Tối đa: " + pChon.getSucChuaToiDa() + " người");
+                    lblSucChua.setText(pChon.getTenLoaiPhongHienThi() + " | Tối đa: " + pChon.getSucChuaToiDa() + " người");
                     txtTienCoc.setText(FormatUtil.formatTien(tienCocToiThieu));
                 } else {
                     lblSoDemVaTien.setText("Hết phòng trong khoảng này!");
@@ -349,7 +349,7 @@ public class DatPhongPanel extends JPanel implements RefreshablePanel, AppEventB
                     BigDecimal tienCocToiThieu = datPhongController.tinhTienCocToiThieu(pChon, dtNhan, dtTra);
                     String moTaNgay = HolidayUtil.getMoTaLoaiNgay(dNhan, dTra);
                     lblSoDemVaTien.setText(soDem + " đêm = " + FormatUtil.formatTien(tien) + " (" + moTaNgay + ")");
-                    lblSucChua.setText("🛏️ " + pChon.getTenLoaiPhongHienThi() + " | Tối đa: " + pChon.getSucChuaToiDa() + " người");
+                    lblSucChua.setText(pChon.getTenLoaiPhongHienThi() + " | Tối đa: " + pChon.getSucChuaToiDa() + " người");
                     txtTienCoc.setText(FormatUtil.formatTien(tienCocToiThieu));
                 } catch (Exception ignored) {
                 }
@@ -622,7 +622,7 @@ public class DatPhongPanel extends JPanel implements RefreshablePanel, AppEventB
         // Mốc 3: Dưới 2 tiếng hoặc đã quá giờ nhận phòng -> CẤM HỦY
         if (soPhutConLai < 120) {
             String msgLoi = String.format(
-                    "❌ KHÔNG THỂ HỦY ĐẶT PHÒNG!\n\n" +
+                    "KHÔNG THỂ HỦY ĐẶT PHÒNG!\n\n" +
                     "Theo quy định khách sạn, chỉ được phép hủy trước giờ nhận phòng tối thiểu 2 tiếng.\n" +
                     "• Giờ nhận phòng dự kiến: %s\n" +
                     "• Hạn chót hủy phòng:      %s\n" +

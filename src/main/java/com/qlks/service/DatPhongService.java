@@ -737,7 +737,7 @@ public class DatPhongService {
                     if (pOpt.isPresent()) {
                         Phong p = pOpt.get();
                         if (p.getTrangThaiHienTai() == TrangThaiPhong.RESERVED) {
-                            boolean conDatPhongKhac = datPhongDAO.hasDatPhongXacNhanTrongNgay(maPhong, LocalDate.now());
+                            boolean conDatPhongKhac = datPhongDAO.hasDatPhongXacNhanTrongNgay(conn, maPhong, LocalDate.now(), maDatPhong);
                             if (!conDatPhongKhac) {
                                 phongDAO.updateTrangThai(conn, maPhong, TrangThaiPhong.AVAILABLE);
                             }

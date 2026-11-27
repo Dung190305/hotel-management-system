@@ -40,7 +40,7 @@ public class LoginFrame extends JFrame {
         pnlHeader.setBackground(UIUtil.COLOR_PRIMARY);
         pnlHeader.setBorder(BorderFactory.createEmptyBorder(25, 20, 25, 20));
 
-        JLabel lblHotelIcon = new JLabel("HOTEL MANAGEMENT SYSTEM", SwingConstants.CENTER);
+        JLabel lblHotelIcon = new JLabel("LUXURY HOTEL", SwingConstants.CENTER);
         lblHotelIcon.setFont(new Font("Segoe UI", Font.BOLD, 20));
         lblHotelIcon.setForeground(Color.WHITE);
 

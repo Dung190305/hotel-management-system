@@ -50,7 +50,7 @@ public class ThongBaoDialog extends JDialog {
                 BorderFactory.createEmptyBorder(12, 16, 12, 16)
         ));
 
-        lblTieuDeTrangThai = new JLabel("🔔 CÁC ĐƠN TỚI HẠN & QUÁ HẠN CẦN XỬ LÝ");
+        lblTieuDeTrangThai = new JLabel("CÁC ĐƠN TỚI HẠN & QUÁ HẠN CẦN XỬ LÝ");
         lblTieuDeTrangThai.setFont(UIUtil.FONT_HEADER);
         lblTieuDeTrangThai.setForeground(new Color(220, 53, 69));
         pnlHeader.add(lblTieuDeTrangThai, BorderLayout.WEST);
@@ -58,7 +58,7 @@ public class ThongBaoDialog extends JDialog {
         JPanel pnlHeaderActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         pnlHeaderActions.setOpaque(false);
 
-        JButton btnDanhDauDaDoc = UIUtil.createButton("✓ Đánh dấu tất cả đã đọc", new Color(40, 167, 69), Color.WHITE);
+        JButton btnDanhDauDaDoc = UIUtil.createButton("Đánh dấu tất cả đã đọc", new Color(40, 167, 69), Color.WHITE);
         btnDanhDauDaDoc.addActionListener(e -> {
             thongBaoService.danhDauTatCaDaDoc();
             loadDuLieu();
@@ -156,7 +156,7 @@ public class ThongBaoDialog extends JDialog {
                 chuaDoc++;
             }
             modelThongBao.addRow(new Object[]{
-                    tb.isDaDoc() ? "🔵 Đã đọc" : "🔴 Chưa đọc",
+                    tb.isDaDoc() ? "Đã đọc" : "Chưa đọc",
                     tb.getMucDo().getTenHienThi(),
                     tb.getLoaiThongBao().getTenHienThi(),
                     tb.getMaDon(),
@@ -168,13 +168,13 @@ public class ThongBaoDialog extends JDialog {
         }
 
         if (list.isEmpty()) {
-            lblTieuDeTrangThai.setText("🔔 Không có thông báo đơn tới hạn");
+            lblTieuDeTrangThai.setText("Không có thông báo đơn tới hạn");
             lblTieuDeTrangThai.setForeground(new Color(40, 167, 69));
         } else if (chuaDoc > 0) {
-            lblTieuDeTrangThai.setText("🔔 Có " + chuaDoc + " thông báo chưa đọc (Dấu ! đỏ)");
+            lblTieuDeTrangThai.setText("Có " + chuaDoc + " thông báo chưa đọc (Dấu ! đỏ)");
             lblTieuDeTrangThai.setForeground(new Color(220, 53, 69));
         } else {
-            lblTieuDeTrangThai.setText("🔔 Tất cả " + list.size() + " thông báo đã đọc (Dấu ! xanh)");
+            lblTieuDeTrangThai.setText("Tất cả " + list.size() + " thông báo đã đọc (Dấu ! xanh)");
             lblTieuDeTrangThai.setForeground(new Color(24, 144, 255));
         }
     }

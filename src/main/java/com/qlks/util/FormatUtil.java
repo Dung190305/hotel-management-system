@@ -63,7 +63,13 @@ public final class FormatUtil {
             return BigDecimal.ZERO;
         }
         try {
-            String clean = str.replaceAll("[^0-9]", "");
+            String s = str.trim();
+            // Nếu chuỗi chứa số thập phân lẻ .00 hoặc ,00 (ví dụ từ MySQL toPlainString) thì loại bỏ phần .00 trước
+            s = s.replaceAll("[\\.,]0+$", "");
+            String clean = s.replaceAll("[^0-9]", "");
+            if (clean.isEmpty()) {
+                return BigDecimal.ZERO;
+            }
             return new BigDecimal(clean);
         } catch (Exception e) {
             return BigDecimal.ZERO;

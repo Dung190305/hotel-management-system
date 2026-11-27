@@ -21,7 +21,8 @@ import java.util.Map;
 import com.qlks.view.RefreshablePanel;
 
 /**
- * Màn hình Quản lý Nhân viên & Tính Bảng Lương Đa hình (Dành cho Quản lý / Admin).
+ * Màn hình Quản lý Nhân viên & Tính Bảng Lương Đa hình (Dành cho Quản lý /
+ * Admin).
  */
 public class NhanVienPanel extends JPanel implements RefreshablePanel {
 
@@ -45,10 +46,9 @@ public class NhanVienPanel extends JPanel implements RefreshablePanel {
         pnlTop.setBackground(Color.WHITE);
         pnlTop.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 233, 238)),
-                BorderFactory.createEmptyBorder(12, 15, 12, 15)
-        ));
+                BorderFactory.createEmptyBorder(12, 15, 12, 15)));
 
-        JLabel lblTitle = new JLabel("QUẢN LÝ NHÂN SỰ & TÍNH LƯƠNG ĐA HÌNH");
+        JLabel lblTitle = new JLabel("QUẢN LÝ NHÂN SỰ & TÍNH LƯƠNG");
         lblTitle.setFont(UIUtil.FONT_TITLE);
         lblTitle.setForeground(UIUtil.COLOR_PRIMARY);
         pnlTop.add(lblTitle, BorderLayout.WEST);
@@ -60,7 +60,7 @@ public class NhanVienPanel extends JPanel implements RefreshablePanel {
         btnThemNv.addActionListener(e -> hienThiDialogThemNhanVien());
         pnlActions.add(btnThemNv);
 
-        JButton btnBangLuong = UIUtil.createButton("💰 BẢNG TÍNH LƯƠNG (OOP)", new Color(40, 167, 69), Color.WHITE);
+        JButton btnBangLuong = UIUtil.createButton("BẢNG TÍNH LƯƠNG (OOP)", new Color(40, 167, 69), Color.WHITE);
         btnBangLuong.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnBangLuong.addActionListener(e -> hienThiBangLuongPolymorphism());
         pnlActions.add(btnBangLuong);
@@ -73,7 +73,8 @@ public class NhanVienPanel extends JPanel implements RefreshablePanel {
         add(pnlTop, BorderLayout.NORTH);
 
         // 2. BẢNG DANH SÁCH NHÂN VIÊN
-        String[] headers = {"Mã NV", "Họ và tên", "Chức vụ", "Tài khoản", "Số điện thoại", "Email", "Ngày vào làm", "Lương cơ bản", "Chi tiết phụ cấp / Hệ số", "Trạng thái"};
+        String[] headers = { "Mã NV", "Họ và tên", "Chức vụ", "Tài khoản", "Số điện thoại", "Email", "Ngày vào làm",
+                "Lương cơ bản", "Chi tiết phụ cấp / Hệ số", "Trạng thái" };
         modelNhanVien = new DefaultTableModel(headers, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -100,10 +101,11 @@ public class NhanVienPanel extends JPanel implements RefreshablePanel {
             if (nv instanceof LeTan lt) {
                 chiTiet = "Ca trực: " + lt.getSoCaTruc() + " | Thưởng ca: " + FormatUtil.formatTien(lt.getThuongCa());
             } else if (nv instanceof QuanLy ql) {
-                chiTiet = "Hệ số: " + ql.getHeSoTrachNhiem() + " | Thưởng HQ: " + FormatUtil.formatTien(ql.getThuongHieuQua());
+                chiTiet = "Hệ số: " + ql.getHeSoTrachNhiem() + " | Thưởng HQ: "
+                        + FormatUtil.formatTien(ql.getThuongHieuQua());
             }
 
-            modelNhanVien.addRow(new Object[]{
+            modelNhanVien.addRow(new Object[] {
                     nv.getMaNhanVien(),
                     nv.getHoTen(),
                     nv.getChucVu(),
@@ -128,12 +130,14 @@ public class NhanVienPanel extends JPanel implements RefreshablePanel {
         List<NhanVien> ds = (List<NhanVien>) ketQua.get("danhSachNhanVien");
         BigDecimal tongQuyLuong = (BigDecimal) ketQua.get("tongQuyLuong");
 
-        JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Bảng Lương Toàn Bộ Nhân Viên (Đa Hình OOP)", true);
+        JDialog dlg = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                "Bảng Lương Toàn Bộ Nhân Viên (Đa Hình OOP)", true);
         dlg.setSize(750, 480);
         dlg.setLocationRelativeTo(this);
         dlg.setLayout(new BorderLayout(10, 10));
 
-        String[] headers = {"Mã NV", "Họ và tên", "Chức vụ", "Lương cơ bản", "Công thức tính lương", "Lương thực nhận"};
+        String[] headers = { "Mã NV", "Họ và tên", "Chức vụ", "Lương cơ bản", "Công thức tính lương",
+                "Lương thực nhận" };
         DefaultTableModel model = new DefaultTableModel(headers, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -147,11 +151,12 @@ public class NhanVienPanel extends JPanel implements RefreshablePanel {
                 if (nv instanceof LeTan lt) {
                     congThuc = "Lương CB + " + lt.getSoCaTruc() + " ca * " + FormatUtil.formatTien(lt.getThuongCa());
                 } else if (nv instanceof QuanLy ql) {
-                    congThuc = "Lương CB * " + ql.getHeSoTrachNhiem() + " + " + FormatUtil.formatTien(ql.getThuongHieuQua());
+                    congThuc = "Lương CB * " + ql.getHeSoTrachNhiem() + " + "
+                            + FormatUtil.formatTien(ql.getThuongHieuQua());
                 }
 
                 // ĐA HÌNH Ở ĐÂY: nv.tinhLuong()
-                model.addRow(new Object[]{
+                model.addRow(new Object[] {
                         nv.getMaNhanVien(),
                         nv.getHoTen(),
                         nv.getChucVu(),
@@ -198,7 +203,8 @@ public class NhanVienPanel extends JPanel implements RefreshablePanel {
         JTextField txtTen = new JTextField();
         JTextField txtSdt = new JTextField();
         JTextField txtEmail = new JTextField();
-        JComboBox<String> cboChucVu = new JComboBox<>(new String[]{"Lễ tân", "Quản lý (Manager)", "Quản trị viên (Admin)"});
+        JComboBox<String> cboChucVu = new JComboBox<>(
+                new String[] { "Lễ tân", "Quản lý (Manager)", "Quản trị viên (Admin)" });
         JTextField txtLuongCb = new JTextField("7000000");
 
         JTextField txtUser = new JTextField();

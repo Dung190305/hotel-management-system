@@ -105,6 +105,7 @@ class RoomOrderConcurrencyTest {
             @Override public boolean hasDatPhongXacNhanTrongNgay(String maPhong, LocalDate ngay) { return false; }
             @Override public Optional<DatPhong> findByIdForUpdate(Connection conn, String id) { return findById(id); }
             @Override public boolean isPhongDangCoNguoiO(Connection conn, String maPhong, String exclude) { return datPhong101.getTrangThai() == TrangThaiDatPhong.DANG_O; }
+            @Override public Optional<DatPhong> findDangOByPhong(String maPhong) { return datPhong101.getTrangThai() == TrangThaiDatPhong.DANG_O ? Optional.of(datPhong101) : Optional.empty(); }
         };
 
         mockDichVuDAO = new DichVuDAO() {
@@ -120,6 +121,13 @@ class RoomOrderConcurrencyTest {
         mockDichVuService = new DichVuService(mockDichVuDAO, null, mockDatPhongDAO, null) {
             @Override
             public void ghiNhanDichVu(String maDatPhong, String maDichVu, int soLuong) {
+                if (datPhong101.getTrangThai() != TrangThaiDatPhong.DANG_O) {
+                    throw new BusinessException("Đơn đặt phòng " + maDatPhong + " đã trả phòng, không thể ghi nhận dịch vụ!");
+                }
+            }
+
+            @Override
+            public void ghiNhanDanhSachDichVu(String maDatPhong, List<DonDichVuPhong.ChiTietMon> danhSachMon) {
                 if (datPhong101.getTrangThai() != TrangThaiDatPhong.DANG_O) {
                     throw new BusinessException("Đơn đặt phòng " + maDatPhong + " đã trả phòng, không thể ghi nhận dịch vụ!");
                 }
@@ -265,5 +273,42 @@ class RoomOrderConcurrencyTest {
         } finally {
             RoomOrderHttpServer.stopServer();
         }
+    }
+
+    @Test
+    @DisplayName("Kiểm tra triệt tiêu va chạm ID (Zero-Collision) khi 50 luồng đồng thời tạo mã đơn")
+    void testZeroCollisionOrderIdGeneration() throws InterruptedException {
+        int soLuongLuong = 50;
+        Set<String> danhSachMaDon = Collections.synchronizedSet(new HashSet<>());
+        ExecutorService executor = Executors.newFixedThreadPool(soLuongLuong);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(soLuongLuong);
+
+        for (int i = 0; i < soLuongLuong; i++) {
+            final int index = i;
+            executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    DonDichVuPhong don = roomOrderService.taoYeuCauOrder(
+                            "101",
+                            "TOKEN-RACE-" + index,
+                            List.of(new DonDichVuPhong.ChiTietMon("DV001", "Coca-Cola", 1, new BigDecimal("20000"))),
+                            "Test race",
+                            DonDichVuPhong.HinhThucThanhToanOrder.GHI_VAO_HOA_DON
+                    );
+                    danhSachMaDon.add(don.getOrderId());
+                } catch (Exception ignored) {
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown();
+        doneLatch.await(5, TimeUnit.SECONDS);
+        executor.shutdown();
+
+        // Khẳng định: Toàn bộ 50 luồng sinh ra 50 mã đơn hoàn toàn khác nhau, tỷ lệ va chạm = 0%!
+        assertEquals(soLuongLuong, danhSachMaDon.size(), "Toàn bộ 50 mã đơn phải là duy nhất tuyệt đối, không có va chạm ID");
     }
 }

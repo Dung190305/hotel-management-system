@@ -49,7 +49,7 @@ public class InRoomQRCodeDialog extends JDialog {
                 BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true)
         ));
 
-        JLabel lblHotel = new JLabel("GRAND LUXURY HOTEL");
+        JLabel lblHotel = new JLabel("LUXURY HOTEL");
         lblHotel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblHotel.setForeground(new Color(30, 60, 114));
         lblHotel.setAlignmentX(Component.CENTER_ALIGNMENT);

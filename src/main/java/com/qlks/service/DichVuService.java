@@ -12,6 +12,7 @@ import com.qlks.exception.BusinessException;
 import com.qlks.model.ChiTietDichVu;
 import com.qlks.model.DatPhong;
 import com.qlks.model.DichVu;
+import com.qlks.model.DonDichVuPhong;
 import com.qlks.model.HoaDon;
 import com.qlks.model.enums.Permission;
 import com.qlks.model.enums.TrangThaiDatPhong;
@@ -24,7 +25,9 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -171,6 +174,104 @@ public class DichVuService {
             }
         } catch (SQLException ex) {
             throw new BusinessException("Lỗi kết nối CSDL khi ghi nhận dịch vụ: " + ex.getMessage(), ex);
+        }
+
+        AppEventBus.fireInvoiceChanged();
+    }
+
+    /**
+     * Ghi nhận danh sách nhiều dịch vụ trong 1 Transaction nguyên tử duy nhất (Batch Processing).
+     * Áp dụng cho đơn Room Order đặt món:
+     * - Tự động gộp các món trùng mã (Deduplicate / Merge items).
+     * - Khóa dòng đặt phòng 1 lần duy nhất bằng SELECT FOR UPDATE.
+     * - Cập nhật hóa đơn 1 lần duy nhất.
+     * - Nếu bất kỳ món nào thất bại, ROLLBACK toàn bộ để bảo vệ tính toàn vẹn dữ liệu.
+     */
+    public void ghiNhanDanhSachDichVu(String maDatPhong, List<DonDichVuPhong.ChiTietMon> danhSachMon) {
+        AuthorizationService.require(Permission.GHI_NHAN_DICH_VU_THANH_TOAN);
+        if (danhSachMon == null || danhSachMon.isEmpty()) {
+            throw new BusinessException("Danh sách dịch vụ không được để trống.");
+        }
+
+        // 1. Gộp các món trùng mã để bảo vệ tính nhất quán dữ liệu
+        Map<String, DonDichVuPhong.ChiTietMon> banMonDaGop = new LinkedHashMap<>();
+        for (DonDichVuPhong.ChiTietMon m : danhSachMon) {
+            if (m.getSoLuong() <= 0) continue;
+            banMonDaGop.merge(m.getMaDichVu(), m, (cu, moi) ->
+                    new DonDichVuPhong.ChiTietMon(cu.getMaDichVu(), cu.getTenDichVu(), cu.getSoLuong() + moi.getSoLuong(), cu.getDonGiaSnapshot())
+            );
+        }
+
+        if (banMonDaGop.isEmpty()) {
+            throw new BusinessException("Không có dịch vụ hợp lệ để ghi nhận.");
+        }
+
+        // 2. Mở Transaction nguyên tử
+        try (Connection conn = layKetNoi()) {
+            conn.setAutoCommit(false);
+            try {
+                // Khóa dòng phiếu đặt phòng để kiểm tra trạng thái và chống xung đột với Check-out
+                DatPhong dpLocked = datPhongDAO.findByIdForUpdate(conn, maDatPhong)
+                        .orElseThrow(() -> new BusinessException("Không tìm thấy phiếu đặt phòng: " + maDatPhong));
+
+                if (dpLocked.getTrangThai() != TrangThaiDatPhong.DANG_O) {
+                    if (dpLocked.getTrangThai() == TrangThaiDatPhong.DA_TRA_PHONG) {
+                        throw new BusinessException("Đơn đặt phòng " + maDatPhong + " đã hoàn tất thủ tục trả phòng (Check-out). Không thể ghi nhận dịch vụ!");
+                    }
+                    throw new BusinessException(String.format(
+                            "Chỉ có thể ghi nhận dịch vụ khi khách đang lưu trú (trạng thái DANG_O). Trạng thái hiện tại: %s.",
+                            dpLocked.getTrangThai().getTenHienThi()));
+                }
+
+                // Kiểm tra hóa đơn nếu có
+                Optional<HoaDon> hdOpt = hoaDonDAO.findByMaDatPhong(conn, maDatPhong);
+                if (hdOpt.isPresent()) {
+                    HoaDon hd = hdOpt.get();
+                    if (hd.getTrangThai() == TrangThaiThanhToan.DA_THANH_TOAN) {
+                        throw new BusinessException("Hóa đơn của đơn đặt phòng này đã được thanh toán, không thể ghi thêm dịch vụ.");
+                    }
+                    hoaDonDAO.findByIdForUpdate(conn, hd.getMaHoaDon());
+                }
+
+                // 3. Ghi nhận tất cả các món vào chi_tiet_dich_vu
+                LocalDateTime now = LocalDateTime.now();
+                for (DonDichVuPhong.ChiTietMon mon : banMonDaGop.values()) {
+                    Optional<DichVu> dvOpt = dichVuDAO.findById(mon.getMaDichVu());
+                    if (dvOpt.isEmpty() || !dvOpt.get().isDangKinhDoanh()) {
+                        throw new BusinessException("Dịch vụ '" + mon.getTenDichVu() + "' hiện tạm ngừng kinh doanh hoặc không tồn tại.");
+                    }
+                    DichVu dv = dvOpt.get();
+                    BigDecimal giaSnapshot = mon.getDonGiaSnapshot() != null ? mon.getDonGiaSnapshot() : dv.getDonGiaHienTai();
+                    ChiTietDichVu ctdv = new ChiTietDichVu(null, maDatPhong, dv, mon.getSoLuong(), giaSnapshot, now);
+                    boolean success = chiTietDichVuDAO.save(conn, ctdv);
+                    if (!success) {
+                        throw new BusinessException("Lưu chi tiết dịch vụ '" + mon.getTenDichVu() + "' thất bại.");
+                    }
+                }
+
+                // 4. Đồng bộ tổng tiền hóa đơn 1 lần duy nhất
+                if (hdOpt.isPresent()) {
+                    HoaDon hd = hdOpt.get();
+                    List<ChiTietDichVu> dsDichVu = chiTietDichVuDAO.findByMaDatPhongForUpdate(conn, maDatPhong);
+                    BigDecimal tongTienDichVu = BigDecimal.ZERO;
+                    if (dsDichVu != null) {
+                        for (ChiTietDichVu ct : dsDichVu) {
+                            tongTienDichVu = tongTienDichVu.add(ct.tinhThanhTien());
+                        }
+                    }
+                    hd.setTienDichVu(tongTienDichVu);
+                    BigDecimal tongTienMoi = hd.tinhTongTien();
+                    hoaDonDAO.updateTien(conn, hd.getMaHoaDon(), hd.getTienPhong(), tongTienDichVu, hd.getTienGiamGia(), hd.getTienCoc(), tongTienMoi);
+                }
+
+                conn.commit();
+            } catch (Exception ex) {
+                conn.rollback();
+                if (ex instanceof BusinessException) throw (BusinessException) ex;
+                throw new BusinessException("Lỗi giao dịch khi ghi nhận danh sách dịch vụ: " + ex.getMessage(), ex);
+            }
+        } catch (SQLException ex) {
+            throw new BusinessException("Lỗi kết nối CSDL khi ghi nhận danh sách dịch vụ: " + ex.getMessage(), ex);
         }
 
         AppEventBus.fireInvoiceChanged();

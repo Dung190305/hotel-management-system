@@ -318,7 +318,7 @@ public class CheckInCheckOutPanel extends JPanel implements RefreshablePanel, Ap
         com.qlks.model.dto.ThongTinPhuThu phuThuEarly = controller.tinhPhuThuEarlyCheckIn(dp.getPhong(), thoiGianCheckIn, dp.getNgayNhanPhong());
         if (phuThuEarly.coPhuThu()) {
             StringBuilder sbEarly = new StringBuilder();
-            sbEarly.append("⚠️ CẢNH BÁO: NHẬN PHÒNG SỚM (EARLY CHECK-IN)\n\n");
+            sbEarly.append("CẢNH BÁO: NHẬN PHÒNG SỚM (EARLY CHECK-IN)\n\n");
             sbEarly.append("• Giờ quy chuẩn nhận phòng: 14:00 ngày ").append(dp.getNgayNhanPhong().toLocalDate()).append("\n");
             sbEarly.append("• Thời gian khách đến:      ").append(FormatUtil.formatNgayGio(thoiGianCheckIn)).append("\n");
             sbEarly.append("• Quy định phụ thu:         ").append(phuThuEarly.getMoTa()).append("\n");
@@ -390,7 +390,7 @@ public class CheckInCheckOutPanel extends JPanel implements RefreshablePanel, Ap
             if (roomOrderService.coDonChoDuyetCuaPhong(maPhongCheck)) {
                 int opt = JOptionPane.showConfirmDialog(
                         this,
-                        "⚠️ CẢNH BÁO: Phòng " + phong + " hiện đang có đơn dịch vụ đặt qua mã QR chưa được tiếp nhận!\n" +
+                        "CẢNH BÁO: Phòng " + phong + " hiện đang có đơn dịch vụ đặt qua mã QR chưa được tiếp nhận!\n" +
                         "Nếu tiếp tục làm thủ tục trả phòng, các đơn chờ này sẽ tự động bị hủy.\n" +
                         "Bạn có chắc chắn muốn tiếp tục Check-out?",
                         "Cảnh báo đơn dịch vụ phòng",

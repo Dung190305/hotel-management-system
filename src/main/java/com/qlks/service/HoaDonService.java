@@ -200,8 +200,9 @@ public class HoaDonService {
                 // Không cho phép thanh toán vượt quá số tiền còn lại phải thu
                 if (soTienThanhToan.compareTo(conLaiPhaiThu) > 0) {
                     throw new BusinessException(String.format(
-                            "Số tiền thanh toán (%s VNĐ) vượt quá số tiền còn lại phải thu (%s VNĐ)!",
-                            soTienThanhToan.toPlainString(), conLaiPhaiThu.toPlainString()));
+                            "Số tiền thanh toán (%s) vượt quá số tiền còn lại phải thu (%s)!",
+                            com.qlks.util.FormatUtil.formatTien(soTienThanhToan),
+                            com.qlks.util.FormatUtil.formatTien(conLaiPhaiThu)));
                 }
 
                 // Hỗ trợ thanh toán nhiều đợt (Partial Payment / Split tender):

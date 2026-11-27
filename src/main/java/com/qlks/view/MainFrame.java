@@ -149,7 +149,7 @@ public class MainFrame extends JFrame implements AppEventBus.AppEventListener {
         header.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
 
         // Logo thương hiệu bên trái
-        JLabel lblBrand = new JLabel("GRAND LUXURY HOTEL PMS");
+        JLabel lblBrand = new JLabel("LUXURY HOTEL PMS");
         lblBrand.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblBrand.setForeground(Color.WHITE);
         header.add(lblBrand, BorderLayout.WEST);
@@ -209,10 +209,10 @@ public class MainFrame extends JFrame implements AppEventBus.AppEventListener {
         sidebar.add(Box.createRigidArea(new Dimension(0, 15)));
 
         // Danh sách các mục điều hướng
-        addSidebarItem(sidebar, "Sơ đồ & Danh mục Phòng", "PHONG");
+        addSidebarItem(sidebar, "Sơ đồ phòng", "PHONG");
         addSidebarItem(sidebar, "Đặt phòng (Booking)", "DAT_PHONG");
         addSidebarItem(sidebar, "Tiếp tân: Check-in / Out", "CHECK_IN_OUT");
-        addSidebarItem(sidebar, "🔔 Thông báo tới hạn", "THONG_BAO");
+        addSidebarItem(sidebar, "Thông báo tới hạn", "THONG_BAO");
         addSidebarItem(sidebar, "Hóa đơn & Thanh toán", "HOA_DON");
         addSidebarItem(sidebar, "Quản lý Khách hàng", "KHACH_HANG");
         addSidebarItem(sidebar, "Danh mục Dịch vụ", "DICH_VU");
@@ -258,7 +258,7 @@ public class MainFrame extends JFrame implements AppEventBus.AppEventListener {
         sidebar.add(Box.createRigidArea(new Dimension(0, 6)));
     }
 
-    private void chuyenTab(String cardName) {
+    public void chuyenTab(String cardName) {
         cardLayout.show(pnlContentArea, cardName);
 
         // Đổi màu active cho button đang chọn
